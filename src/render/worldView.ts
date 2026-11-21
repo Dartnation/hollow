@@ -2,26 +2,23 @@ import {
   Color3,
   Color4,
   DynamicTexture,
-  Matrix,
   Mesh,
   MeshBuilder,
   ParticleSystem,
   PointLight,
-  Quaternion,
   Scene,
   ShadowGenerator,
   SpotLight,
   StandardMaterial,
   TransformNode,
   Vector3,
-  VertexBuffer,
   type Camera,
+  type DirectionalLight,
 } from "@babylonjs/core";
 import type { GameSim } from "../sim/game";
-import { BRIDGE, BRIDGE_ROUTE, ESCAPE_ROUTE, INTERACT, LANDMARKS, PALETTE, SHED, SLOPE_ROUTE, WORLD } from "../sim/layout";
-import { distanceToPolyline } from "../sim/rng";
-import type { Tree } from "../sim/types";
+import { BRIDGE, INTERACT, LANDMARKS, PALETTE, SHED } from "../sim/layout";
 import { bridgeHeight, groundHeight, terrainHeight } from "../sim/world";
+import { createForest } from "./forest";
 import { pbr } from "./materials";
 
 export interface WorldView {
@@ -31,7 +28,7 @@ export interface WorldView {
   setHudLit(on: boolean): void;
 }
 
-export function buildWorld(scene: Scene, camera: Camera, sim: GameSim): WorldView {
+export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: DirectionalLight): WorldView {
   const floorY = groundHeight(LANDMARKS.hut.x, LANDMARKS.hut.z);
   const wood = pbr(scene, "wood", PALETTE.wood, 0.78, 0.02);
   const woodDark = pbr(scene, "woodDark", PALETTE.woodDark, 0.84, 0.03);
@@ -48,9 +45,7 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim): WorldVie
   lampMat.emissiveColor = Color3.FromHexString("#d5ecdf");
   lampMat.emissiveIntensity = 0;
 
-  buildGround(scene);
-  buildTrees(scene, sim.world.trees);
-  buildRocks(scene, sim);
+  const forest = createForest(scene, sim, moon);
   buildWater(scene);
   buildBridge(scene, woodDark);
   buildCar(scene, metal);
@@ -60,9 +55,10 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim): WorldVie
   buildPassage(scene, stone, lampMat);
   const monster = buildMonster(scene);
   const lights = buildLights(scene, floorY, camera);
+  forest.useShadows(lights.shadows);
   buildRain(scene, camera);
 
-  const exposure = { value: 1.18 };
+  const exposure = { value: 1.12 };
   let phase = 0;
 
   return {
@@ -78,7 +74,7 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim): WorldVie
       const lit = simNow.mission.lights;
       glass.emissiveIntensity = lit ? 0.85 : 0.02;
       lights.interior.intensity = lit ? 2.4 : 0;
-      lights.porch.intensity = lit ? 3.2 : 0;
+      lights.porch.intensity = lit ? 8 : 0;
       lights.securityA.intensity = lit ? 2.6 : 0;
       lights.securityB.intensity = lit ? 2.2 : 0;
       const diode = simNow.mission.radio ? 2.8 : 0;
@@ -88,143 +84,13 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim): WorldVie
       lights.passage.intensity = lampMat.emissiveIntensity > 0.2 ? 4 : 0;
       shed.rotor.rotation.z += simNow.mission.radio ? dt * 6 : 0;
       poseMonster(monster, simNow, phase, dt);
+      forest.update(camera.position, phase);
       const forward = camera.getDirection(Vector3.Forward());
       lights.flashlight.position.copyFrom(camera.position);
       lights.flashlight.direction.copyFrom(forward);
       lights.flashlight.setEnabled(simNow.flashlight && simNow.started);
     },
   };
-}
-
-function buildGround(scene: Scene): void {
-  const width = WORLD.maxX - WORLD.minX;
-  const depth = WORLD.maxZ - WORLD.minZ;
-  const ground = MeshBuilder.CreateGround("forest-floor", { width, height: depth, subdivisions: 120, updatable: true }, scene);
-  ground.position.set((WORLD.minX + WORLD.maxX) / 2, 0, (WORLD.minZ + WORLD.maxZ) / 2);
-  const positions = ground.getVerticesData(VertexBuffer.PositionKind);
-  if (!positions) return;
-  for (let i = 0; i < positions.length; i += 3) {
-    const x = (positions[i] ?? 0) + ground.position.x;
-    const z = (positions[i + 2] ?? 0) + ground.position.z;
-    const y = positions[i + 1];
-    if (y === undefined) continue;
-    positions[i + 1] = terrainHeight(x, z);
-  }
-  ground.updateVerticesData(VertexBuffer.PositionKind, positions);
-  ground.createNormals(true);
-  ground.refreshBoundingInfo();
-  const material = pbr(scene, "ground", PALETTE.dirt, 0.9, 0.02);
-  material.albedoTexture = paintGround(scene, 1024);
-  ground.material = material;
-  ground.receiveShadows = true;
-}
-
-function paintGround(scene: Scene, size: number): DynamicTexture {
-  const texture = new DynamicTexture("ground-albedo", { width: size, height: size }, scene, false);
-  const ctx = texture.getContext();
-  const image = ctx.getImageData(0, 0, size, size);
-  const data = image.data;
-  const width = WORLD.maxX - WORLD.minX;
-  const depth = WORLD.maxZ - WORLD.minZ;
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const wx = WORLD.minX + (x / size) * width;
-      const wz = WORLD.minZ + (1 - y / size) * depth;
-      const h = terrainHeight(wx, wz);
-      const n = hash(wx, wz);
-      let r = 74 + n * 28;
-      let g = 68 + n * 20;
-      let b = 52 + n * 14;
-      if (h > 3) {
-        g += 16;
-        r -= 6;
-      }
-      const path = Math.min(
-        distanceToPolyline(wx, wz, BRIDGE_ROUTE),
-        distanceToPolyline(wx, wz, SLOPE_ROUTE),
-        distanceToPolyline(wx, wz, ESCAPE_ROUTE),
-      );
-      if (path < 4.5) {
-        const t = 1 - path / 4.5;
-        r = r * (1 - t) + 128 * t;
-        g = g * (1 - t) + 96 * t;
-        b = b * (1 - t) + 68 * t;
-      }
-      if (Math.hypot(wx - 76, wz - 70) < 9 && h < 0.4) {
-        r = 22;
-        g = 34;
-        b = 38;
-      }
-      const i = (y * size + x) * 4;
-      data[i] = r;
-      data[i + 1] = g;
-      data[i + 2] = b;
-      data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  texture.update();
-  return texture;
-}
-
-function buildTrees(scene: Scene, trees: readonly Tree[]): void {
-  const kinds = [0, 1, 2, 3] as const;
-  for (const kind of kinds) {
-    const group = trees.filter((tree) => tree.kind === kind);
-    if (!group.length) continue;
-    const trunk = MeshBuilder.CreateCylinder(`trunk-${kind}`, { height: 4.2, diameterTop: kind === 3 ? 0.18 : 0.28, diameterBottom: 0.46, tessellation: 6 }, scene);
-    trunk.position.y = 2.1;
-    const parts: Mesh[] = [trunk];
-    if (kind !== 3) {
-      const lower = MeshBuilder.CreateCylinder(`foliage-a-${kind}`, { height: 3.4, diameterTop: 0.2, diameterBottom: kind === 2 ? 2.2 : 3.1, tessellation: 7 }, scene);
-      lower.position.y = 4.3;
-      const upper = MeshBuilder.CreateCylinder(`foliage-b-${kind}`, { height: 2.4, diameterTop: 0, diameterBottom: kind === 2 ? 1.4 : 2.1, tessellation: 6 }, scene);
-      upper.position.y = 6.4;
-      parts.push(lower, upper);
-    } else {
-      const arm = MeshBuilder.CreateCylinder(`snag-${kind}`, { height: 1.8, diameter: 0.12, tessellation: 5 }, scene);
-      arm.position.set(0.4, 3.4, 0);
-      arm.rotation.z = 0.9;
-      parts.push(arm);
-    }
-    const merged = Mesh.MergeMeshes(parts, true, true, undefined, false, true);
-    if (!merged) continue;
-    const material = pbr(scene, `pine-${kind}`, kind === 3 ? "#2a261f" : kind === 1 ? PALETTE.pine : PALETTE.pineDeep, 0.92);
-    merged.material = material;
-    const buffer = new Float32Array(group.length * 16);
-    const matrix = new Matrix();
-    group.forEach((tree, index) => {
-      const y = groundHeight(tree.x, tree.z);
-      Matrix.ComposeToRef(
-        new Vector3(tree.scale, tree.scale, tree.scale),
-        Quaternion.RotationYawPitchRoll(tree.rot, tree.tilt, 0),
-        new Vector3(tree.x, y, tree.z),
-        matrix,
-      );
-      matrix.copyToArray(buffer, index * 16);
-    });
-    merged.thinInstanceSetBuffer("matrix", buffer, 16, false);
-    merged.alwaysSelectAsActiveMesh = false;
-  }
-}
-
-function buildRocks(scene: Scene, sim: GameSim): void {
-  const proto = MeshBuilder.CreateSphere("rock", { diameter: 1, segments: 5 }, scene);
-  proto.scaling.y = 0.62;
-  const material = pbr(scene, "rockMat", "#6d736e", 0.88, 0.05);
-  proto.material = material;
-  const buffer = new Float32Array(sim.world.rocks.length * 16);
-  const matrix = new Matrix();
-  sim.world.rocks.forEach((rock, index) => {
-    Matrix.ComposeToRef(
-      new Vector3(rock.scale, rock.height, rock.scale * 0.85),
-      Quaternion.RotationYawPitchRoll(rock.rot, 0, 0),
-      new Vector3(rock.x, groundHeight(rock.x, rock.z) + rock.height * 0.25, rock.z),
-      matrix,
-    );
-    matrix.copyToArray(buffer, index * 16);
-  });
-  proto.thinInstanceSetBuffer("matrix", buffer, 16, false);
 }
 
 function buildWater(scene: Scene): void {
@@ -552,6 +418,7 @@ function buildLights(scene: Scene, floorY: number, camera: Camera): {
   diode: PointLight;
   passage: PointLight;
   flashlight: SpotLight;
+  shadows: ShadowGenerator;
 } {
   const warm = Color3.FromHexString(PALETTE.warm);
   const interior = new PointLight("interior", new Vector3(110.5, floorY + 2.2, 145), scene);
@@ -559,7 +426,7 @@ function buildLights(scene: Scene, floorY: number, camera: Camera): {
   interior.range = 9;
   const porch = new SpotLight("porch", new Vector3(106.5, floorY + 2.4, 153), new Vector3(0, -1, 0.2), Math.PI / 2.4, 4, scene);
   porch.diffuse = warm;
-  porch.range = 12;
+  porch.range = 26;
   const securityA = new SpotLight("sec-a", new Vector3(107, floorY + 3.1, 140.2), new Vector3(-0.2, -0.6, -1), Math.PI / 3, 6, scene);
   const securityB = new SpotLight("sec-b", new Vector3(114, floorY + 3.1, 140.2), new Vector3(0.3, -0.6, -1), Math.PI / 3, 6, scene);
   securityA.diffuse = warm;
@@ -571,17 +438,20 @@ function buildLights(scene: Scene, floorY: number, camera: Camera): {
   const passage = new PointLight("passage", new Vector3(LANDMARKS.passage.x, passageY + 3.1, LANDMARKS.passage.z), scene);
   passage.diffuse = Color3.FromHexString("#d5ecdf");
   passage.range = 14;
-  const flashlight = new SpotLight("flashlight", Vector3.Zero(), new Vector3(0, 0, 1), 0.62, 10, scene);
-  flashlight.diffuse = Color3.FromHexString("#f3e6d0");
-  flashlight.intensity = 7.5;
-  flashlight.range = 26;
+  const flashlight = new SpotLight("flashlight", Vector3.Zero(), new Vector3(0, 0, 1), 0.42, 28, scene);
+  flashlight.diffuse = Color3.FromHexString("#ffe6c2");
+  flashlight.intensity = 22;
+  flashlight.range = 18;
+  flashlight.shadowMinZ = 0.15;
+  flashlight.shadowMaxZ = 18;
   const shadows = new ShadowGenerator(1024, flashlight);
   shadows.usePercentageCloserFiltering = true;
+  shadows.bias = 0.002;
   for (const mesh of scene.meshes) {
     if (mesh.name === "limb" || mesh.name === "car" || mesh.name.startsWith("wall")) shadows.addShadowCaster(mesh, false);
-    mesh.receiveShadows = true;
+    if (!mesh.isAnInstance) mesh.receiveShadows = true;
   }
-  return { interior, porch, securityA, securityB, diode, passage, flashlight };
+  return { interior, porch, securityA, securityB, diode, passage, flashlight, shadows };
 }
 
 function buildRain(scene: Scene, camera: Camera): void {
@@ -624,9 +494,4 @@ function normalize(angle: number): number {
   while (angle > Math.PI) angle -= Math.PI * 2;
   while (angle < -Math.PI) angle += Math.PI * 2;
   return angle;
-}
-
-function hash(x: number, z: number): number {
-  const n = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
-  return n - Math.floor(n);
 }

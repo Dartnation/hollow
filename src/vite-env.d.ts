@@ -13,6 +13,8 @@ interface HollowPublicApi {
   hold(seconds: number): void;
   setFrequency(mhz: number): void;
   setHudVisible(visible: boolean): void;
+  setFlashlight(on: boolean): void;
+  stats(): { fps: number; activeMeshes: number; triangles: number };
   kill(): void;
   save(): void;
   load(): boolean;
