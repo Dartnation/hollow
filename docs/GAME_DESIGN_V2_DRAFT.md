@@ -3,9 +3,9 @@
 
 **Status:** DESIGN DRAFT — ikke implementeret, ikke godkendt til merge og afventer ejerens V1-spiltest.
 **Kilde:** Review af V1 PR #2 (`47abf39`), V1 screenshot af skoven og eksisterende V1-design.
-**Princip:** Færdiggør grafik og logik for skov, hytte, monster og **spillerkarakter** før professionel lydproduktion; først derefter større missioner.
+**Princip:** Færdiggør udseende, animationer og logik for skov, hytte, monster og **spillerkarakter**. Derefter én særskilt lydfase, derefter én særskilt fase med filmisk lys/vejr/tåge, og først til sidst nye missioner.
 
-**Ejerens prioritering (fast fase-gate): V2 = skov + hytte + monster + spillerkarakter med gennemtestet logik. V3 = lyd. V4 = nye/udvidede missioner.** Eksisterende V1-lyde og M01 beholdes som fungerende testgrundlag, men deres udbygning er ikke V2-scope.
+**Ejerens prioritering (fast fase-gate): V2 = skov + hytte + spillerkarakter + monster med gennemtestet logik. V3 = professionel lyd. V4 = filmisk lys, skygger, tåge, vejr og farver. V5 = nye/udvidede missioner.** Eksisterende V1-lyd, simple fungerende lyskilder og M01 beholdes som testgrundlag i V2. De efterfølgende faser er selvstændige kvalitetsløft.
 
 ## 1. Executive vision
 V1 har et reelt TypeScript/Babylon.js-fundament med mission M01, strømvalg, monster-AI, lyd, checkpoints og kørende browser. Den synlige oplevelse ligner dog foreløbigt et geometrisk prototypemiljø: kegletræer, stor brungrå skovbund, for åbne sigtelinjer og meget ensartet tåge.
@@ -31,15 +31,17 @@ I V2 skal de første 30 sekunder opleves som **en fysisk, fugtig, tæt og urovæ
 
 **Definition of done:** Når spilleren starter, må man ikke føle, at man står midt på en stor flad arena fyldt med ensartede juletræskegler.
 
-## 3. Lys, vejr og atmosfære (P0)
-- Rebalancér ambient-/månebelysning. Skab reelt mørke mellem træerne, men hold vigtige silhuetter og interaktive mål læsbare.
-- Lokalt varmt lys i hytten skal være første pejlemærke, ikke en konstant grå tågeflade.
-- Lommelygten skal have kontrolleret lysfald, troværdige skygger og mulighed for at afsløre objekter/monsterets form.
-- Differentier tåge i nær-, mellem- og fjernplan; brug atmosfærisk perspektiv. Undgå ensfarvet tågevæg.
-- Fugt, vind og regn kan ses og høres i kontrolleret omfang; vand, træ og jord ser forskellige ud.
-- Brug moderat farvegrading, vignette og bloom, ikke kosmetik som skjuler simpel geometri.
+## 3. Lys, vejr og atmosfære — grundfunktioner i V2, professionel lysfase i V4
+**I V2 kræves kun teknisk funktionelt basislys** til skov/hytte, interaktioner, monsterets synssans og lommelygten. Sørg for at lysændringer ikke bryder missionens elvalg, og at områderne kan navigeres og testes.
 
-**Tre lyssituationer:** (1) ankomst med fjernt varmt lys, (2) lommelygte mellem tætte stammer, (3) strømskiftet slukker udvendigt sikkerhedslys og gør udendørsområdet markant farligere at læse.
+**I V4 skal vi fokusere professionelt og særskilt på:**
+- Måneskin, lokale lyskilder, realistisk inspirerede skygger og skovens kontrast/lysretning.
+- Lommelygtens kegle, lysfald, skygger og fysiske følelse.
+- Tåge med dybde, atmosfærisk perspektiv, nedbør/vådhed og vejrvariation.
+- Filmisk farvegrading, tilpasning mellem interiør/eksteriør og kontrolleret postprocessing.
+- Performance under dynamisk lys, skygger og tåge.
+
+**Vigtigt:** Vent ikke med *alt* lys til V4; uden brugbart basislys kan man hverken vurdere grafik, se animationer eller teste monsterets perception.
 
 ## 4. Skovfogedhytte — ét ikonisk sted (P0)
 - Bevar samme fysiske placering og alle nødvendige mission-interaktioner.
@@ -71,11 +73,11 @@ Spilleren er i førsteperson. Der skal være en bevidst karakterpræsentation, i
 - **Ingen større arbejde med nye MP3-filer, musik, voice-over, rumklang, lydmix eller Horror Director-lydlag i V2.**
 - Efter ejerens V2-godkendelse designes V3 særskilt som professionel lydunderstøttet gyseroplevelse.
 
-## 7. Missioner — bevar eksisterende M01, udvid først i V4
+## 7. Missioner — bevar eksisterende M01, udvid først i V5
 - M01 `Det sidste signal` bruges som **funktionel regressionstest** af skov, hytte, spillerinteraktion og monsteradfærd.
 - Ingen nye missioner, bygninger, fortællingsforløb eller væsentligt ændrede missionsregler i V2.
 - Kritiske softlocks, misvisende prompts og ødelagte missionstransitions er fejl og skal naturligvis rettes.
-- Professionelt missionsdesign og udvidet historie hører til **V4**, efter V3-lyd er godkendt.
+- Professionelt missionsdesign og udvidet historie hører til **V5**, efter V3-lyd og V4-lys er godkendt.
 
 ## 8. Teknisk implementering — bevar det som virker
 - Opdel `src/render/worldView.ts` i fokuserede modules, efterhånden som ny vegetation og lys implementeres. Undgå én uoverskuelig mega-fil.
@@ -98,7 +100,7 @@ V2 er først klar til ejerens godkendelsestest når:
 1. Sammenligningsbilleder fra samme V1/V2-kamerapositioner dokumenterer væsentligt bedre skov, hytte, monster og spillerkarakter.
 2. Ingen fremtrædende ensformige kegletræer i hero shots; skovbund, underskov, grene, sten og naturlige sigtelinjer ses tydeligt.
 3. Skovfogedhyttens interiør og eksteriør er sammenhængende, detaljeret og fysisk spilbart.
-4. Natstemning, lommelygte og varmt huslys har god kontrast og læsbarhed i både lyse/mørke scener.
+4. Grundlæggende lys, lommelygte og hyttens strømstyrede lamper fungerer og kan bruges til gameplaytest. Filmisk lys, avancerede skygger, tåge og farvegrading godkendes først i V4.
 5. Monsteret har et særpræget visuelt design, troværdige animationsfaser og konsekvent perception/navigationsadfærd.
 6. Spillerkarakterens førstepersonsvisning/hænder/kropsfornemmelse og gang/løb/duk/interaktion føles gennemarbejdet, uden kamera- eller kollisionsfejl.
 7. **Alle aftalte relevante funktionelle og regressionstests** for spiller og monster består, inklusive tab af syn, lydstimuli, vægge, døre, AI-søgning, undvigelse, checkpoints, power-mutex og save/load. Målet er fuldt gennemtestet V2-scope; absolut fejlfrihed kan ikke garanteres.
@@ -108,15 +110,15 @@ V2 er først klar til ejerens godkendelsestest når:
 11. Ejer spiller og giver eksplicit godkendelse før overgang til **V3 lyd**. Ingen automatisk merge eller overgang.
 
 ## 11. Cursor-arbejdsrækkefølge for V2 (efter ejerens accept)
-- **V2.1** Skov, terræn, træer, underskov, lys og tåge.
+- **V2.1** Skov, terræn, træer og underskov; kun nødvendigt funktionslys til vurdering.
 - **V2.2** Skovfogedhytte: materialer, eksteriør, interiør, detaljer og dør-/interaktionsintegration.
 - **V2.3** Spillerkarakter: førstepersonskrop/hænder, lommelygte, bevægelse, animation og kollision.
 - **V2.4** Vogteren: redesign, animation, fair sanser, søgeadfærd, navigation og undvigelse.
-- **V2.5** Visuel polering, automatiserede fulde tests, browser-playthrough, målt performance, screenshots og brugerens accept.
+- **V2.5** Model-, tekstur- og animationspolering, automatiserede fulde tests, browser-playthrough, målt performance, screenshots og brugerens accept.
 
 Disse dele kan opdeles i mindre commits/PR'er, men udgør tilsammen **V2**. Ingen ny lydpakke eller nye missioner i denne fase.
 
-**Næste versioner:** V3 = professionel MP3-lyd, spændingsmusik og rumlig atmosfære; V4 = missioner, gåder, historie og konsekvenser.
+**Næste versioner:** V3 = professionel MP3-lyd, spændingsmusik og rumlig atmosfære; V4 = filmisk belysning, lommelygte, skygger, tåge og vejr; V5 = missioner, gåder, historie og konsekvenser.
 
 ## 12. Brugerens åbne V1-feedback — udfyld før implementering
 - Var skoven for tom eller for lys/mørk?
