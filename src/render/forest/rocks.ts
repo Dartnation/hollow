@@ -3,6 +3,7 @@ import type { GameSim } from "../../sim/game";
 import { groundHeight } from "../../sim/world";
 import { pbr } from "../materials";
 import { MeshAccum } from "./mesh";
+import { placeThin } from "./thin";
 
 function stone(scene: Scene, index: number): Mesh {
   const accum = new MeshAccum();
@@ -30,31 +31,19 @@ export function buildStones(scene: Scene, sim: GameSim): void {
   sim.world.rocks.forEach((_, index) => groups[index % 3]?.push(index));
   prototypes.forEach((mesh, group) => {
     const ids = groups[group] ?? [];
-    const firstId = ids[0];
-    const first = firstId === undefined ? undefined : sim.world.rocks[firstId];
-    if (!first) {
-      mesh.setEnabled(false);
-      return;
-    }
-    mesh.position.set(first.x, groundHeight(first.x, first.z) + first.height * 0.2, first.z);
-    mesh.rotationQuaternion = Quaternion.RotationYawPitchRoll(first.rot, 0.1, 0.2);
-    mesh.scaling.set(first.scale, first.height, first.scale * 0.85);
-    const rest = ids.slice(1);
-    if (!rest.length) return;
-    const buffer = new Float32Array(rest.length * 16);
+    const matrices: Matrix[] = [];
     const matrix = new Matrix();
-    rest.forEach((id, index) => {
+    for (const id of ids) {
       const rock = sim.world.rocks[id];
-      if (!rock) return;
+      if (!rock) continue;
       Matrix.ComposeToRef(
         new Vector3(rock.scale, rock.height, rock.scale * 0.85),
         Quaternion.RotationYawPitchRoll(rock.rot, 0.1, 0.15),
         new Vector3(rock.x, groundHeight(rock.x, rock.z) + rock.height * 0.2, rock.z),
         matrix,
       );
-      matrix.copyToArray(buffer, index * 16);
-    });
-    mesh.thinInstanceSetBuffer("matrix", buffer, 16, false);
-    mesh.receiveShadows = true;
+      matrices.push(matrix.clone());
+    }
+    placeThin(mesh, matrices);
   });
 }

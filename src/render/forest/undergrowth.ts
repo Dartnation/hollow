@@ -4,6 +4,8 @@ import { distanceToPolyline, mulberry32 } from "../../sim/rng";
 import { groundHeight, onSlope, streamDistance } from "../../sim/world";
 import { pbr } from "../materials";
 import { MeshAccum } from "./mesh";
+import { placeThin } from "./thin";
+
 interface Scatter {
   x: number;
   z: number;
@@ -18,9 +20,9 @@ function clearOfRoutes(x: number, z: number, gap: number): boolean {
     distanceToPolyline(x, z, ESCAPE_ROUTE),
   );
   if (path < gap) return false;
-  if (x > HUT.minX - 5 && x < HUT.maxX + 6 && z > HUT.minZ - 7 && z < HUT.maxZ + 8) return false;
-  if (x > SHED.minX - 4 && x < SHED.maxX + 5 && z > SHED.minZ - 4 && z < SHED.maxZ + 5) return false;
-  if (Math.hypot(x, z) < 7) return false;
+  if (x > HUT.minX - 1.4 && x < HUT.maxX + 1.8 && z > HUT.minZ - 1.6 && z < HUT.maxZ + 2) return false;
+  if (x > SHED.minX - 1.6 && x < SHED.maxX + 2 && z > SHED.minZ - 1.6 && z < SHED.maxZ + 2) return false;
+  if (Math.hypot(x - 2.4, z - 6.5) < 3.2) return false;
   return true;
 }
 
@@ -42,9 +44,9 @@ function scatter(seed: number, count: number, gap: number, bias: (x: number, z: 
 function fan(name: string, scene: Scene, fronds: number, length: number, width: number): Mesh {
   const accum = new MeshAccum();
   for (let i = 0; i < fronds; i += 1) {
-    const ang = (i / fronds) * Math.PI * 2;
-    const dir = new Vector3(Math.cos(ang), 0.55, Math.sin(ang)).normalize();
-    accum.addTaper(new Vector3(0, 0.02, 0), dir.scale(length), width, width * 0.15, 3, 0);
+    const ang = -0.9 + (i / Math.max(1, fronds - 1)) * 1.8;
+    const dir = new Vector3(Math.sin(ang) * 0.85, 0.72, 0.25).normalize();
+    accum.addTaper(new Vector3(0, 0.04, 0), dir.scale(length), width, width * 0.2, 3, 0);
   }
   return accum.bake(name, scene);
 }
@@ -74,67 +76,91 @@ function mossMesh(scene: Scene): Mesh {
 
 function grassMesh(scene: Scene): Mesh {
   const accum = new MeshAccum();
-  for (let i = 0; i < 5; i += 1) {
-    const ang = (i / 5) * Math.PI * 2;
-    const dir = new Vector3(Math.cos(ang), 0.42, Math.sin(ang)).normalize();
-    accum.addTaper(new Vector3(0, 0.02, 0), dir.scale(0.34), 0.1, 0.02, 3, 0);
+  for (let i = 0; i < 4; i += 1) {
+    const ang = i * 1.7;
+    const dir = new Vector3(Math.cos(ang) * 0.18, 0.96, Math.sin(ang) * 0.18).normalize();
+    accum.addTaper(new Vector3(0, 0.02, 0), dir.scale(0.62), 0.07, 0.012, 3, 0);
   }
   return accum.bake("grass", scene);
 }
 
+function rootMesh(scene: Scene): Mesh {
+  const accum = new MeshAccum();
+  for (let i = 0; i < 3; i += 1) {
+    const ang = (i / 3) * Math.PI * 2;
+    const dir = new Vector3(Math.cos(ang), 0.04, Math.sin(ang));
+    accum.addTaper(new Vector3(0, 0.05, 0), dir.scale(0.85), 0.07, 0.02, 3, 0);
+  }
+  return accum.bake("root", scene);
+}
+
+function stickMesh(scene: Scene): Mesh {
+  const accum = new MeshAccum();
+  accum.addTaper(new Vector3(-0.45, 0.06, 0), new Vector3(0.5, 0.1, 0.05), 0.035, 0.015, 3, 0);
+  return accum.bake("stick", scene);
+}
+
+function saplingMesh(scene: Scene): Mesh {
+  const accum = new MeshAccum();
+  accum.addTaper(new Vector3(0, 0, 0), new Vector3(0.03, 1.05, 0), 0.045, 0.014, 4, 0);
+  accum.addTaper(new Vector3(0, 0.82, 0), new Vector3(0.02, 1.12, 0), 0.16, 0.05, 5, 0.05);
+  return accum.bake("sapling", scene);
+}
+
 export function buildUndergrowth(scene: Scene): void {
   const fern = fan("fern", scene, 7, 0.78, 0.16);
-  fern.material = pbr(scene, "fern", "#2a4634", 0.8, 0);
+  fern.material = pbr(scene, "fern", "#5d8a68", 0.78, 0);
   const bush = bushMesh(scene);
-  bush.material = pbr(scene, "bush", "#1e332a", 0.84, 0);
+  bush.material = pbr(scene, "bush", "#2c4a3a", 0.84, 0);
   const log = logMesh(scene);
   const logMat = pbr(scene, "log", "#4a3b2e", 0.9, 0);
   log.material = logMat;
   const moss = mossMesh(scene);
   moss.material = pbr(scene, "moss", "#3d5a3a", 0.95, 0);
   const grass = grassMesh(scene);
-  const blade = pbr(scene, "grass", "#4d6a45", 0.78, 0);
+  const blade = pbr(scene, "grass", "#7a9a62", 0.76, 0);
   blade.backFaceCulling = false;
   grass.material = blade;
 
-  const ferns = scatter(1701471, 640, 2.6, (x, z, rng) => streamDistance(x, z) < 16 || rng() > 0.35);
-  const bushes = scatter(1701472, 380, 3.1, (x, z) => (onSlope(x, z) ? true : streamDistance(x, z) > 6));
-  const logs = scatter(1701473, 42, 4.2, (x, z, rng) => onSlope(x, z) || rng() > 0.82);
-  const mosses = scatter(1701474, 520, 1.6, () => true);
-  const grasses = scatter(1701475, 1400, 1.15, (x, z) => streamDistance(x, z) > 3.2);
+  const root = rootMesh(scene);
+  root.material = pbr(scene, "root", "#4a3a2c", 0.94, 0);
+  const stick = stickMesh(scene);
+  stick.material = pbr(scene, "stick", "#5a4636", 0.9, 0);
+  const sapling = saplingMesh(scene);
+  const saplingMat = pbr(scene, "sapling", "#3f5c48", 0.84, 0);
+  saplingMat.backFaceCulling = false;
+  sapling.material = saplingMat;
+
+  const ferns = scatter(1701471, 1100, 0.85, (x, z, rng) => streamDistance(x, z) < 18 || rng() > 0.22);
+  const bushes = scatter(1701472, 640, 1.45, (x, z) => onSlope(x, z) || streamDistance(x, z) > 5);
+  const logs = scatter(1701473, 78, 2.55, (x, z, rng) => onSlope(x, z) || rng() > 0.78);
+  const mosses = scatter(1701474, 860, 0.35, () => true);
+  const grasses = scatter(1701475, 2400, 0.45, (x, z) => streamDistance(x, z) > 2.2);
+  const roots = scatter(1701476, 420, 1.2, () => true);
+  const sticks = scatter(1701477, 520, 1.05, () => true);
+  const saplings = scatter(1701478, 460, 1.9, (x, z, rng) => onSlope(x, z) || rng() > 0.35);
 
   thin(fern, ferns, 0);
   thin(bush, bushes, 0);
   thin(log, logs, 0);
   thin(moss, mosses, 0);
   thin(grass, grasses, 0);
+  thin(root, roots, 0);
+  thin(stick, sticks, 0);
+  thin(sapling, saplings, 0);
 }
 
 function thin(mesh: Mesh, items: readonly Scatter[], yLift: number): void {
-  if (!items.length) {
-    mesh.setEnabled(false);
-    return;
-  }
-  const first = items[0];
-  if (!first) return;
-  mesh.position.set(first.x, groundHeight(first.x, first.z) + yLift, first.z);
-  mesh.rotationQuaternion = Quaternion.RotationYawPitchRoll(first.rot, 0, 0);
-  mesh.scaling.setAll(first.scale);
-  const rest = items.slice(1);
-  if (!rest.length) {
-    mesh.thinInstanceCount = 0;
-    return;
-  }
-  const buffer = new Float32Array(rest.length * 16);
+  const matrices: Matrix[] = [];
   const matrix = new Matrix();
-  rest.forEach((item, index) => {
+  for (const item of items) {
     Matrix.ComposeToRef(
       new Vector3(item.scale, item.scale, item.scale),
       Quaternion.RotationYawPitchRoll(item.rot, 0, 0),
       new Vector3(item.x, groundHeight(item.x, item.z) + yLift, item.z),
       matrix,
     );
-    matrix.copyToArray(buffer, index * 16);
-  });
-  mesh.thinInstanceSetBuffer("matrix", buffer, 16, false);
+    matrices.push(matrix.clone());
+  }
+  placeThin(mesh, matrices);
 }

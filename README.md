@@ -28,6 +28,6 @@ Dette repository er **public**. Commit aldrig passwords, API-nøgler, tokens, pe
 
 ## Ærlig status
 
-V1 er implementeret på `feature/v1-vertical-slice` og er ikke godkendt. V2.1-skoven ligger på `feature/v2.1-forest-graphics` og venter også på spiltest. Se `docs/V2_1_FOREST.md`.
+V1 er implementeret på `feature/v1-vertical-slice` og er ikke godkendt. V2.1 ligger på `feature/v2.1-forest-graphics`. V2.1R, rettelsen af instancing, tæthed og LOD, ligger på `feature/v2.1r-forest-revision` og er heller ikke godkendt. Se `docs/V2_1R_FOREST.md`.
 
 Start lokalt med `npm install` og `npm run dev`. Standardporten er 5183 og kan ændres med `PORT` eller `vite --port`. Spilvejledning og testresultater ligger i `docs/PLAYTEST_V1.md` og `docs/V1_STATUS.md`. Grafikken er procedural og stemningsfuld, ikke fotorealistisk.
