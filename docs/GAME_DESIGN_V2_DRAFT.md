@@ -3,7 +3,9 @@
 
 **Status:** DESIGN DRAFT — ikke implementeret, ikke godkendt til merge og afventer ejerens V1-spiltest.
 **Kilde:** Review af V1 PR #2 (`47abf39`), V1 screenshot af skoven og eksisterende V1-design.
-**Princip:** Opgrader kvaliteten af præcis det område, vi allerede har, før vi bygger større kort eller flere missioner.
+**Princip:** Færdiggør grafik og logik for skov, hytte, monster og **spillerkarakter** før professionel lydproduktion; først derefter større missioner.
+
+**Ejerens prioritering (fast fase-gate): V2 = skov + hytte + monster + spillerkarakter med gennemtestet logik. V3 = lyd. V4 = nye/udvidede missioner.** Eksisterende V1-lyde og M01 beholdes som fungerende testgrundlag, men deres udbygning er ikke V2-scope.
 
 ## 1. Executive vision
 V1 har et reelt TypeScript/Babylon.js-fundament med mission M01, strømvalg, monster-AI, lyd, checkpoints og kørende browser. Den synlige oplevelse ligner dog foreløbigt et geometrisk prototypemiljø: kegletræer, stor brungrå skovbund, for åbne sigtelinjer og meget ensartet tåge.
@@ -53,18 +55,27 @@ I V2 skal de første 30 sekunder opleves som **en fysisk, fugtig, tæt og urovæ
 - En skræmmende hændelse må gerne være sjælden, men skal have bevægelse, timing og en lydmæssig opbygning. Ikke konstant jumpscare.
 - Hvis ressourcer er begrænsede, prioritér troværdig silhuet og animation frem for avanceret realistisk hud.
 
-## 6. Lyddesign og spændingskurve (P1)
-- Udvid det nuværende MP3-manifest med juridisk sikre ambience-lag: distant wind, close leaves, branches, dry/wet footsteps, house creak, radio crackle, monster breathing.
-- 3D-position og afstand er eksisterende fundament. Indfør dæmpning bag vægge og enkelte skift mellem udendørs/indendørs akustik, uden at påstå fysisk komplet ray-traced audio.
-- Dynamisk spændingskurve: stilhed efterfulgt af tynde advarselstegn, intensitet ved undersøgelse og jagt, afslutning med plads til lettelse.
-- Undertekster til alle betydningsfulde informationslyde. Respekter browserens audio-gesture.
+## 5a. Spillerkarakter — synligt og mekanisk gennemarbejdet (P0)
+Spilleren er i førsteperson. Der skal være en bevidst karakterpræsentation, ikke et svævende kamera.
 
-## 7. Mission og brugeroplevelse (P1)
-- M01 `Det sidste signal` bevares. Forbedr **oplevelsen**, ikke bare antallet af opgaver.
-- Bedre diegetisk vejledning i starten (landmærker, spor, radiolyde), så spilleren ikke konstant må læse en topbanner.
-- Radio og strøm skal have konkret feedback gennem lyskilder, skærm/viser, klik og elektriske lyde.
-- Bro vs. skråning får visuel og lydmæssig identitet; begge er stadig mulige, men opleves forskellige.
-- Undersøg pointer lock/resume, interaktions-afstand og risiko for softlocks i faktisk brugerforløb.
+- Design sammenhængende førstepersonshænder/arme, lommelygtegreb og passende krops-/skyggesilhuet, hvor det giver visuel mening. Bevægelsen skal føles fysisk uden stor, forstyrrende kameravuggen.
+- Gang, løb, dukning, stop/start, drejning og interaktion har responsiv styring og synligt troværdige overgange. Hænder og lommelygte reagerer på interaktion og ikke kun UI-prompt.
+- Justér øjenhøjde, FOV, bevægelsesrespons, acceleration, kollision og forholdet mellem kropsvolumen og døråbninger. Spilleren må ikke gå gennem vægge eller sidde fast på små ujævnheder.
+- Animation og gameplay skal være synkroniseret; fx lommelygte/arm ved E-interaktion og naturlig overgange ved sprint/dukning.
+- Valider pointer-lock, pause/fortsæt, save/load, interaktioner, checkpoint-genstart og både skovruter.
+- V1-mekaniske regler må ikke ødelægges for at forbedre grafikken. Eventuelle nye regler specificeres og testes særskilt.
+
+## 6. Lyd — udskyd professionelt lydarbejde til V3
+- V2 bevarer V1's eksisterende MP3, lyd-events og browserafspilning, så monsterets hørelse og gameplay kan testes.
+- Kun nødvendige rettelser af lydhændelser, der ellers ødelægger monsterets sensorik, er V2-scope.
+- **Ingen større arbejde med nye MP3-filer, musik, voice-over, rumklang, lydmix eller Horror Director-lydlag i V2.**
+- Efter ejerens V2-godkendelse designes V3 særskilt som professionel lydunderstøttet gyseroplevelse.
+
+## 7. Missioner — bevar eksisterende M01, udvid først i V4
+- M01 `Det sidste signal` bruges som **funktionel regressionstest** af skov, hytte, spillerinteraktion og monsteradfærd.
+- Ingen nye missioner, bygninger, fortællingsforløb eller væsentligt ændrede missionsregler i V2.
+- Kritiske softlocks, misvisende prompts og ødelagte missionstransitions er fejl og skal naturligvis rettes.
+- Professionelt missionsdesign og udvidet historie hører til **V4**, efter V3-lyd er godkendt.
 
 ## 8. Teknisk implementering — bevar det som virker
 - Opdel `src/render/worldView.ts` i fokuserede modules, efterhånden som ny vegetation og lys implementeres. Undgå én uoverskuelig mega-fil.
@@ -82,31 +93,37 @@ V2 skal derfor indeholde:
 - Rapport med FPS og frame timings på den faktisk testede PC, skærmopløsning, browser og grafikindstillinger. Mål 60 FPS på relevante gaming-PC'er, og dokumentér ærligt hvis ikke opnået.
 - Ejerens menneskelige V2-spiltest skal vurdere grafik, spænding, mission, AI, lyd og styring.
 
-## 10. Godkendelseskriterier (visuelle)
-V2 kan ikke kaldes færdig før:
-1. Fem V1/V2-sammenligningsbilleder viser markant bedre skov, to ruter, hytte og monster (samme vinkler).
-2. Ingen fremtrædende, ensformige kegletræer i hero shots.
-3. Synlige detaljer på jord, vegetation og hytte; scenen føles ikke tom.
-4. Natstemningen har tydelig forskel på mørke skovlommer, lommelygte og varmt huslys.
-5. Monstret kan genkendes som en designet figur med flere læsbare bevægelsesfaser.
-6. M01's kerne, begge ruter, strøm-mutex, checkpoint, AI og lyd fortsætter med at fungere.
-7. Automatiseret browser-playthrough til slutningen lykkes uden state-teleport, og begrænsninger dokumenteres.
-8. Ingen merge til `main` og ingen overgang til V3 uden ejerens eksplicitte godkendelse.
+## 10. Definition of done — V2-kvalitetsgate
+V2 er først klar til ejerens godkendelsestest når:
+1. Sammenligningsbilleder fra samme V1/V2-kamerapositioner dokumenterer væsentligt bedre skov, hytte, monster og spillerkarakter.
+2. Ingen fremtrædende ensformige kegletræer i hero shots; skovbund, underskov, grene, sten og naturlige sigtelinjer ses tydeligt.
+3. Skovfogedhyttens interiør og eksteriør er sammenhængende, detaljeret og fysisk spilbart.
+4. Natstemning, lommelygte og varmt huslys har god kontrast og læsbarhed i både lyse/mørke scener.
+5. Monsteret har et særpræget visuelt design, troværdige animationsfaser og konsekvent perception/navigationsadfærd.
+6. Spillerkarakterens førstepersonsvisning/hænder/kropsfornemmelse og gang/løb/duk/interaktion føles gennemarbejdet, uden kamera- eller kollisionsfejl.
+7. **Alle aftalte relevante funktionelle og regressionstests** for spiller og monster består, inklusive tab af syn, lydstimuli, vægge, døre, AI-søgning, undvigelse, checkpoints, power-mutex og save/load. Målet er fuldt gennemtestet V2-scope; absolut fejlfrihed kan ikke garanteres.
+8. En browser-playthrough når M01 `COMPLETE` gennem normal styring, uden QA-teleport eller direkte state-injektion; eventuelle testbegrænsninger dokumenteres.
+9. Der er rigtige FPS- og frame-time målinger fra brugerens maskine eller dokumenteret testhardware; ydelsen er acceptabel uden at ofre spilbarhed.
+10. Eksisterende MP3 og M01 fungerer fortsat. Nye lydspor/lydpolering og nye missioner er **ikke** kriterier i V2.
+11. Ejer spiller og giver eksplicit godkendelse før overgang til **V3 lyd**. Ingen automatisk merge eller overgang.
 
-## 11. Forslået rækkefølge for Cursor (efter ejerens accept)
-- **V2.1** Naturlig skovbund, træer, terræn og visuel komposition.
-- **V2.2** Hytte, materialer, lys og tåge.
-- **V2.3** Vogterens udseende/animation, lyddynamik og horror beats.
-- **V2.4** Mission-polering, regressionstest, browser-playthrough, optimering og skærmbilleder.
+## 11. Cursor-arbejdsrækkefølge for V2 (efter ejerens accept)
+- **V2.1** Skov, terræn, træer, underskov, lys og tåge.
+- **V2.2** Skovfogedhytte: materialer, eksteriør, interiør, detaljer og dør-/interaktionsintegration.
+- **V2.3** Spillerkarakter: førstepersonskrop/hænder, lommelygte, bevægelse, animation og kollision.
+- **V2.4** Vogteren: redesign, animation, fair sanser, søgeadfærd, navigation og undvigelse.
+- **V2.5** Visuel polering, automatiserede fulde tests, browser-playthrough, målt performance, screenshots og brugerens accept.
 
-Hver del må leveres i sin egen commit eller lille PR, men de udgør samlet **V2**. Kvalitet vægter højere end antal features.
+Disse dele kan opdeles i mindre commits/PR'er, men udgør tilsammen **V2**. Ingen ny lydpakke eller nye missioner i denne fase.
+
+**Næste versioner:** V3 = professionel MP3-lyd, spændingsmusik og rumlig atmosfære; V4 = missioner, gåder, historie og konsekvenser.
 
 ## 12. Brugerens åbne V1-feedback — udfyld før implementering
 - Var skoven for tom eller for lys/mørk?
 - Kunne missionen gennemføres uden hjælp?
 - Hvor uhyggelig var Vogteren? Kunne du undslippe?
 - Hvilket sted var mest stemningsfuldt? Hvilket var kedeligst?
-- Var lyden skræmmende og tydelig?
+- Var den eksisterende lyd funktionel (kun fejlrettelser i V2)?
 - Hvilke konkrete fejl/mangler oplevede du?
 
 **Dette dokument er et designforslag, ikke en ordre om at igangsætte V2-kodning.**
