@@ -28,4 +28,6 @@ Dette repository er **public**. Commit aldrig passwords, API-nøgler, tokens, pe
 
 ## Ærlig status
 
-Dette er et **designoplæg**, ikke et færdigt spil. Kode, grafik, lokalt spil og tests mangler stadig og skal eftervises af Cursor før versionen kan godkendes.
+V1 er implementeret på grenen `feature/v1-vertical-slice` som en spilbar vertical slice. Den er ikke godkendt. Ejerens spiltest mangler, og ChatGPT har ikke reviewet buildet endnu.
+
+Start lokalt med `npm install` og `npm run dev`. Standardporten er 5183 og kan ændres med `PORT` eller `vite --port`. Spilvejledning og testresultater ligger i `docs/PLAYTEST_V1.md` og `docs/V1_STATUS.md`. Grafikken er procedural og stemningsfuld, ikke fotorealistisk.
