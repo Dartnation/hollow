@@ -22,7 +22,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
       { x, z, lookX, lookZ },
     );
     await page.waitForTimeout(700);
-    await page.screenshot({ path: `docs/evidence/v2.1r/${name}.png` });
+    await page.screenshot({ path: `docs/evidence/v2.1s/${name}.png` });
   };
 
   await shot("01-arrival", 2.2, 8, 40, 70);
@@ -40,7 +40,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(600);
-  await page.screenshot({ path: "docs/evidence/v2.1r/04-power.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1s/04-power.png" });
   await page.evaluate(() => {
     const api = window.__HOLLOW__;
     api?.placePlayer(112.4, 142.6);
@@ -48,7 +48,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(500);
-  await page.screenshot({ path: "docs/evidence/v2.1r/05-interior.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1s/05-interior.png" });
   await page.evaluate(() => {
     const api = window.__HOLLOW__;
     api?.placeMonster(101, 120);
@@ -57,7 +57,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(700);
-  await page.screenshot({ path: "docs/evidence/v2.1r/07-monster.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1s/07-monster.png" });
   await page.evaluate(() => {
     const api = window.__HOLLOW__;
     api?.setFlashlight(true);
@@ -66,7 +66,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(800);
-  await page.screenshot({ path: "docs/evidence/v2.1r/08-flashlight.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1s/08-flashlight.png" });
   await page.evaluate(() => {
     const api = window.__HOLLOW__;
     api?.setFlashlight(false);
@@ -75,9 +75,11 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(700);
-  await page.screenshot({ path: "docs/evidence/v2.1r/09-lights-off.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1s/09-lights-off.png" });
   await shot("10-undergrowth", 14, 28, 22, 46);
   await shot("11-arrival-step", 8, 16, 40, 70);
+  await shot("12-bridge", 68, 66, 86, 78);
+  await shot("13-edge", 24, 96, -10, 96);
 
   const mission = await page.evaluate(() => {
     const api = window.__HOLLOW__;
@@ -97,7 +99,31 @@ test("plays the first night and records the hero shots", async ({ page }) => {
   const fps = samples.reduce((sum, value) => sum + value, 0) / samples.length;
   const fpsMin = Math.min(...samples);
   const report = { fps, fpsMin, samples, stats, errors, mission, seed: 170147, note: "headless Chromium" };
-  writeFileSync("docs/evidence/v2.1r/report.json", JSON.stringify(report, null, 2));
+  writeFileSync("docs/evidence/v2.1s/report.json", JSON.stringify(report, null, 2));
   expect(errors, errors.join("\n")).toEqual([]);
   expect(fps).toBeGreaterThan(0);
+});
+
+test("inspects trees and ground in neutral light", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/?test=1&seed=170147&inspect=1");
+  await page.waitForFunction(() => window.__HOLLOW__?.ready === true);
+  await page.evaluate(() => window.__HOLLOW__?.start());
+  const shot = async (name: string, x: number, z: number, lookX: number, lookZ: number) => {
+    await page.evaluate(
+      ({ x, z, lookX, lookZ }) => {
+        const api = window.__HOLLOW__;
+        api?.setHudVisible(false);
+        api?.placePlayer(x, z);
+        api?.lookAt(lookX, lookZ);
+      },
+      { x, z, lookX, lookZ },
+    );
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `docs/evidence/v2.1s/${name}.png` });
+  };
+  await shot("14-inspect-crown", 16, 30, 22, 38);
+  await shot("15-inspect-ground", 18, 34, 19.4, 36.2);
+  expect(errors, errors.join("\n")).toEqual([]);
 });

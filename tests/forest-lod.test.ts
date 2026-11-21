@@ -11,8 +11,10 @@ describe("forest lod", () => {
   });
 
   it("keeps a tree on the far mesh until the camera is close", () => {
-    expect(lodTier(40)).toBe("far");
-    expect(lodTier(18)).toBe("near");
+    expect(lodTier(80, null)).toBe("far");
+    expect(lodTier(36, null)).toBe("mid");
+    expect(lodTier(12, null)).toBe("near");
+    expect(lodTier(24, "near")).toBe("near");
   });
 });
 

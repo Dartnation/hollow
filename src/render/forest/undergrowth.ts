@@ -1,10 +1,11 @@
-import { Matrix, Mesh, Quaternion, Scene, Vector3 } from "@babylonjs/core";
+import { Matrix, Mesh, PBRMaterial, Quaternion, Scene, Vector3 } from "@babylonjs/core";
 import { BRIDGE_ROUTE, ESCAPE_ROUTE, HUT, SHED, SLOPE_ROUTE, WORLD } from "../../sim/layout";
 import { distanceToPolyline, mulberry32 } from "../../sim/rng";
 import { groundHeight, onSlope, streamDistance } from "../../sim/world";
 import { pbr } from "../materials";
 import { MeshAccum } from "./mesh";
 import { placeThin } from "./thin";
+import { paintFern, paintNeedles, paintTuft } from "./textures";
 
 interface Scatter {
   x: number;
@@ -41,23 +42,28 @@ function scatter(seed: number, count: number, gap: number, bias: (x: number, z: 
   return out;
 }
 
-function fan(name: string, scene: Scene, fronds: number, length: number, width: number): Mesh {
+function cutout(scene: Scene, name: string, hex: string): PBRMaterial {
+  const material = pbr(scene, name, hex, 0.9, 0);
+  material.useAlphaFromAlbedoTexture = true;
+  material.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHATEST;
+  material.alphaCutOff = 0.3;
+  material.backFaceCulling = false;
+  material.twoSidedLighting = true;
+  return material;
+}
+
+function fernMesh(scene: Scene): Mesh {
   const accum = new MeshAccum();
-  for (let i = 0; i < fronds; i += 1) {
-    const ang = -0.9 + (i / Math.max(1, fronds - 1)) * 1.8;
-    const dir = new Vector3(Math.sin(ang) * 0.85, 0.72, 0.25).normalize();
-    accum.addTaper(new Vector3(0, 0.04, 0), dir.scale(length), width, width * 0.2, 3, 0);
-  }
-  return accum.bake(name, scene);
+  const up = new Vector3(0.05, 0.82, 0.35).normalize();
+  accum.addCard(new Vector3(0, 0.32, 0.12), Vector3.Right(), up, 0.62, 0.78);
+  return accum.bake("fern", scene);
 }
 
 function bushMesh(scene: Scene): Mesh {
   const accum = new MeshAccum();
-  for (let i = 0; i < 6; i += 1) {
-    const ang = (i / 6) * Math.PI * 2;
-    const origin = new Vector3(Math.cos(ang) * 0.18, 0.05, Math.sin(ang) * 0.18);
-    accum.addTaper(origin, origin.add(new Vector3(Math.cos(ang) * 0.15, 0.62, Math.sin(ang) * 0.15)), 0.34, 0.04, 5, 0.1);
-  }
+  accum.addCard(new Vector3(0, 0.28, 0), Vector3.Right(), Vector3.Up(), 0.7, 0.55);
+  accum.addCard(new Vector3(0, 0.26, 0), new Vector3(0.2, 0, 0.8), Vector3.Up(), 0.62, 0.5);
+  accum.addCard(new Vector3(0.1, 0.22, 0.05), new Vector3(0.7, 0, -0.3), new Vector3(0.1, 0.7, 0.2), 0.5, 0.42);
   return accum.bake("bush", scene);
 }
 
@@ -76,11 +82,8 @@ function mossMesh(scene: Scene): Mesh {
 
 function grassMesh(scene: Scene): Mesh {
   const accum = new MeshAccum();
-  for (let i = 0; i < 4; i += 1) {
-    const ang = i * 1.7;
-    const dir = new Vector3(Math.cos(ang) * 0.18, 0.96, Math.sin(ang) * 0.18).normalize();
-    accum.addTaper(new Vector3(0, 0.02, 0), dir.scale(0.62), 0.07, 0.012, 3, 0);
-  }
+  accum.addCard(new Vector3(0, 0.28, 0), Vector3.Right(), Vector3.Up(), 0.42, 0.58);
+  accum.addCard(new Vector3(0, 0.26, 0), new Vector3(0.15, 0, 0.85), Vector3.Up(), 0.36, 0.52);
   return accum.bake("grass", scene);
 }
 
@@ -102,24 +105,30 @@ function stickMesh(scene: Scene): Mesh {
 
 function saplingMesh(scene: Scene): Mesh {
   const accum = new MeshAccum();
-  accum.addTaper(new Vector3(0, 0, 0), new Vector3(0.03, 1.05, 0), 0.045, 0.014, 4, 0);
-  accum.addTaper(new Vector3(0, 0.82, 0), new Vector3(0.02, 1.12, 0), 0.16, 0.05, 5, 0.05);
+  accum.addCard(new Vector3(0, 0.42, 0), Vector3.Right(), Vector3.Up(), 0.34, 0.7);
+  accum.addCard(new Vector3(0, 0.4, 0), new Vector3(0.25, 0, 0.85), Vector3.Up(), 0.28, 0.62);
   return accum.bake("sapling", scene);
 }
 
 export function buildUndergrowth(scene: Scene): void {
-  const fern = fan("fern", scene, 7, 0.78, 0.16);
-  fern.material = pbr(scene, "fern", "#5d8a68", 0.78, 0);
+  const needles = paintNeedles(scene);
+  const fernTex = paintFern(scene);
+  const tuft = paintTuft(scene);
+  const fern = fernMesh(scene);
+  const fernMat = cutout(scene, "fern", "#e4ebe4");
+  fernMat.albedoTexture = fernTex;
+  fern.material = fernMat;
   const bush = bushMesh(scene);
-  bush.material = pbr(scene, "bush", "#2c4a3a", 0.84, 0);
+  const bushMat = cutout(scene, "bush", "#d5ddd4");
+  bushMat.albedoTexture = needles;
+  bush.material = bushMat;
   const log = logMesh(scene);
-  const logMat = pbr(scene, "log", "#4a3b2e", 0.9, 0);
-  log.material = logMat;
+  log.material = pbr(scene, "log", "#4a3b2e", 0.94, 0);
   const moss = mossMesh(scene);
   moss.material = pbr(scene, "moss", "#3d5a3a", 0.95, 0);
   const grass = grassMesh(scene);
-  const blade = pbr(scene, "grass", "#7a9a62", 0.76, 0);
-  blade.backFaceCulling = false;
+  const blade = cutout(scene, "grass", "#dfe6dc");
+  blade.albedoTexture = tuft;
   grass.material = blade;
 
   const root = rootMesh(scene);
@@ -127,8 +136,8 @@ export function buildUndergrowth(scene: Scene): void {
   const stick = stickMesh(scene);
   stick.material = pbr(scene, "stick", "#5a4636", 0.9, 0);
   const sapling = saplingMesh(scene);
-  const saplingMat = pbr(scene, "sapling", "#3f5c48", 0.84, 0);
-  saplingMat.backFaceCulling = false;
+  const saplingMat = cutout(scene, "sapling", "#d5ddd4");
+  saplingMat.albedoTexture = needles;
   sapling.material = saplingMat;
 
   const ferns = scatter(1701471, 1100, 0.85, (x, z, rng) => streamDistance(x, z) < 18 || rng() > 0.22);

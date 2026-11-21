@@ -1,0 +1,14 @@
+{
+  "seed": 170147,
+  "viewport": "1920x1080",
+  "devicePixelRatio": 1,
+  "camera": { "x": 2.2, "z": 8, "lookX": 40, "lookZ": 70 },
+  "frames": 90,
+  "avgMs": 16.56,
+  "p95Ms": 16.9,
+  "maxMs": 17.1,
+  "minMs": 7.1,
+  "stats": { "fps": 60.08, "activeMeshes": 105, "triangles": 351924 },
+  "audioLoaded": 10,
+  "note": "Cursor Chromium, same arrival camera as the V2.1R 1920x1080 sample. The short 7.1 ms frame is the first sample. Playback is not started."
+}
