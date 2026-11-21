@@ -1,5 +1,7 @@
 # Hollow V2.1R — skovrevision
 
+V2.1S fortsætter i `docs/V2_1S_FOREST.md`. Tallene nedenfor er V2.1R.
+
 Rettelse oven på V2.1. Mission, hytte, monster, radio, strøm og checkpoints er de samme koordinater. Ingen nye lyde, ingen nye missioner, og V2.2 er ikke startet. Versionen er ikke godkendt.
 
 ## Instancing

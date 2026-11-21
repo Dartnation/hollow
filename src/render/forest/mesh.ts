@@ -39,6 +39,27 @@ export class MeshAccum {
     }
   }
 
+  /** A camera-facing-independent quad. `right` and `up` are the card axes. */
+  addCard(center: Vector3, right: Vector3, up: Vector3, width: number, height: number): void {
+    if (right.lengthSquared() < 0.0001 || up.lengthSquared() < 0.0001) return;
+    const rx = right.normalize().scale(width * 0.5);
+    const uy = up.normalize().scale(height * 0.5);
+    const corners = [
+      center.subtract(rx).subtract(uy),
+      center.add(rx).subtract(uy),
+      center.add(rx).add(uy),
+      center.subtract(rx).add(uy),
+    ];
+    const normal = Vector3.Cross(rx, uy).normalize();
+    const base = this.positions.length / 3;
+    for (const corner of corners) {
+      this.positions.push(corner.x, corner.y, corner.z);
+      this.normals.push(normal.x, normal.y, normal.z);
+    }
+    this.uvs.push(0, 1, 1, 1, 1, 0, 0, 0);
+    this.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
   bake(name: string, scene: Scene): Mesh {
     const mesh = new Mesh(name, scene);
     const data = new VertexData();

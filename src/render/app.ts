@@ -21,6 +21,7 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   const params = new URLSearchParams(location.search);
   const seed = Number(params.get("seed")) || SEED_DEFAULT;
   const testMode = params.get("test") === "1";
+  const inspect = params.get("inspect") === "1";
   const errors: string[] = [];
   window.addEventListener("error", (event) => errors.push(event.message));
   window.addEventListener("unhandledrejection", (event) => errors.push(String(event.reason)));
@@ -33,11 +34,11 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   const engine = new Engine(canvas, true, { adaptToDeviceRatio: false, stencil: true, antialias: true });
   engine.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, 1.5));
   const scene = new Scene(engine);
-  scene.clearColor = new Color4(0.07, 0.09, 0.09, 1);
+  scene.clearColor = inspect ? new Color4(0.58, 0.6, 0.58, 1) : new Color4(0.07, 0.09, 0.09, 1);
   scene.fogMode = Scene.FOGMODE_EXP2;
-  scene.fogDensity = 0.012;
-  scene.fogColor = new Color3(0.14, 0.18, 0.17);
-  scene.ambientColor = new Color3(0.08, 0.09, 0.09);
+  scene.fogDensity = inspect ? 0.0015 : 0.02;
+  scene.fogColor = inspect ? new Color3(0.58, 0.6, 0.58) : new Color3(0.06, 0.07, 0.065);
+  scene.ambientColor = inspect ? new Color3(0.32, 0.33, 0.31) : new Color3(0.08, 0.09, 0.09);
 
   const camera = new FreeCamera("eye", new Vector3(2.4, 3, 8), scene);
   camera.fov = (78 * Math.PI) / 180;
@@ -46,12 +47,12 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   camera.inputs.clear();
 
   const hemi = new HemisphericLight("sky", new Vector3(0.1, 1, 0.2), scene);
-  hemi.intensity = 0.22;
-  hemi.diffuse = new Color3(0.45, 0.55, 0.62);
+  hemi.intensity = inspect ? 0.9 : 0.22;
+  hemi.diffuse = inspect ? new Color3(0.86, 0.87, 0.82) : new Color3(0.45, 0.55, 0.62);
   hemi.groundColor = new Color3(0.05, 0.06, 0.05);
   const moon = new DirectionalLight("moon", new Vector3(0.35, -1, 0.42), scene);
-  moon.intensity = 0.55;
-  moon.diffuse = new Color3(0.62, 0.72, 0.82);
+  moon.intensity = inspect ? 1.15 : 0.55;
+  moon.diffuse = inspect ? new Color3(1, 0.97, 0.92) : new Color3(0.62, 0.72, 0.82);
   moon.position = new Vector3(-40, 80, -20);
 
   const sim = new GameSim(seed);
@@ -60,18 +61,18 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   try {
     pipeline = new DefaultRenderingPipeline("grade", true, scene, [camera]);
     pipeline.fxaaEnabled = true;
-    pipeline.bloomEnabled = true;
+    pipeline.bloomEnabled = !inspect;
     pipeline.bloomThreshold = 0.72;
     pipeline.bloomWeight = 0.14;
     pipeline.bloomKernel = 48;
     pipeline.imageProcessingEnabled = true;
     pipeline.imageProcessing.toneMappingEnabled = true;
-    pipeline.imageProcessing.contrast = 1.08;
-    pipeline.imageProcessing.exposure = 1.12;
-    pipeline.imageProcessing.vignetteEnabled = true;
+    pipeline.imageProcessing.contrast = inspect ? 1.02 : 1.08;
+    pipeline.imageProcessing.exposure = inspect ? 1.2 : 1.12;
+    pipeline.imageProcessing.vignetteEnabled = !inspect;
     pipeline.imageProcessing.vignetteWeight = 0.55;
     pipeline.imageProcessing.vignetteStretch = 0.55;
-    pipeline.grainEnabled = true;
+    pipeline.grainEnabled = !inspect;
     pipeline.grain.intensity = 6;
   } catch (error) {
     errors.push(`Postprocessing udeladt: ${String(error)}`);

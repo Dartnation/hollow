@@ -3,6 +3,7 @@ import { BRIDGE_ROUTE, ESCAPE_ROUTE, SLOPE_ROUTE, WORLD } from "../../sim/layout
 import { distanceToPolyline } from "../../sim/rng";
 import { streamDistance, terrainHeight } from "../../sim/world";
 import { pbr } from "../materials";
+import { paintGroundDetail } from "./textures";
 
 function hash(x: number, z: number): number {
   const n = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
@@ -26,12 +27,28 @@ export function buildForestFloor(scene: Scene): void {
     ground.createNormals(true);
   }
   ground.refreshBoundingInfo();
-  const material = pbr(scene, "ground", "#3a342c", 0.94, 0);
+  const material = pbr(scene, "ground", "#f0ebe4", 0.94, 0);
   material.albedoTexture = paintFloor(scene, 1024);
   material.bumpTexture = paintBump(scene, 512);
+  const detail = paintGroundDetail(scene);
+  detail.uScale = width / 3.2;
+  detail.vScale = depth / 3.2;
+  material.detailMap.isEnabled = true;
+  material.detailMap.texture = detail;
+  material.detailMap.diffuseBlendLevel = 0.42;
+  material.detailMap.bumpLevel = 0;
   material.useParallax = false;
   ground.material = material;
   ground.receiveShadows = true;
+
+  const skirt = MeshBuilder.CreateGround("forest-skirt", { width: width + 280, height: depth + 280 }, scene);
+  skirt.position.set(ground.position.x, -0.05, ground.position.z);
+  const skirtMat = pbr(scene, "forest-skirt", "#101412", 1, 0);
+  skirtMat.environmentIntensity = 0;
+  skirtMat.directIntensity = 0.15;
+  skirt.material = skirtMat;
+  skirt.isPickable = false;
+  skirt.receiveShadows = false;
 }
 
 function paintFloor(scene: Scene, size: number): DynamicTexture {
@@ -47,8 +64,8 @@ function paintFloor(scene: Scene, size: number): DynamicTexture {
       const wz = WORLD.minZ + (1 - y / size) * depth;
       const n = hash(wx * 0.37, wz * 0.37);
       const h = terrainHeight(wx, wz);
-      let r = 86 + n * 28;
-      let g = 72 + n * 18;
+      let r = 78 + n * 24;
+      let g = 68 + n * 16;
       let b = 52 + n * 12;
       if (h > 2.2) {
         g += 18;
@@ -77,8 +94,8 @@ function paintFloor(scene: Scene, size: number): DynamicTexture {
         b = b * (1 - t) + 46 * t;
       }
       if (hash(wx * 1.7, wz * 1.7) > 0.52 && path > 1.15) {
-        g += 16;
-        r -= 6;
+        g += 10;
+        r -= 4;
       }
       const i = (y * size + x) * 4;
       data[i] = r;

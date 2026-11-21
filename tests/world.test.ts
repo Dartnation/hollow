@@ -108,4 +108,11 @@ describe("forest layout", () => {
     for (const tree of world.trees) home = Math.min(home, Math.hypot(tree.x - MONSTER_HOME.x, tree.z - MONSTER_HOME.z));
     expect(home).toBeGreaterThan(4);
   });
+
+  it("keeps a second seed dense and walkable", () => {
+    const other = createWorld(22011);
+    expect(other.trees.length).toBeGreaterThan(900);
+    const path = findPath(other.grid, { x: 2.4, z: 6.5 }, { x: 110, z: 136 });
+    expect(path).not.toBeNull();
+  });
 });
