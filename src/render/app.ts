@@ -35,9 +35,9 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   const scene = new Scene(engine);
   scene.clearColor = new Color4(0.07, 0.09, 0.09, 1);
   scene.fogMode = Scene.FOGMODE_EXP2;
-  scene.fogDensity = 0.0082;
-  scene.fogColor = new Color3(0.27, 0.32, 0.31);
-  scene.ambientColor = new Color3(0.2, 0.22, 0.22);
+  scene.fogDensity = 0.012;
+  scene.fogColor = new Color3(0.14, 0.18, 0.17);
+  scene.ambientColor = new Color3(0.08, 0.09, 0.09);
 
   const camera = new FreeCamera("eye", new Vector3(2.4, 3, 8), scene);
   camera.fov = (78 * Math.PI) / 180;
@@ -46,16 +46,16 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   camera.inputs.clear();
 
   const hemi = new HemisphericLight("sky", new Vector3(0.1, 1, 0.2), scene);
-  hemi.intensity = 0.58;
-  hemi.diffuse = new Color3(0.55, 0.64, 0.7);
-  hemi.groundColor = new Color3(0.16, 0.17, 0.16);
+  hemi.intensity = 0.22;
+  hemi.diffuse = new Color3(0.45, 0.55, 0.62);
+  hemi.groundColor = new Color3(0.05, 0.06, 0.05);
   const moon = new DirectionalLight("moon", new Vector3(0.35, -1, 0.42), scene);
-  moon.intensity = 0.95;
+  moon.intensity = 0.55;
   moon.diffuse = new Color3(0.62, 0.72, 0.82);
   moon.position = new Vector3(-40, 80, -20);
 
   const sim = new GameSim(seed);
-  const view = buildWorld(scene, camera, sim);
+  const view = buildWorld(scene, camera, sim, moon);
   let pipeline: DefaultRenderingPipeline | null = null;
   try {
     pipeline = new DefaultRenderingPipeline("grade", true, scene, [camera]);
@@ -67,9 +67,9 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
     pipeline.imageProcessingEnabled = true;
     pipeline.imageProcessing.toneMappingEnabled = true;
     pipeline.imageProcessing.contrast = 1.08;
-    pipeline.imageProcessing.exposure = 1.32;
+    pipeline.imageProcessing.exposure = 1.12;
     pipeline.imageProcessing.vignetteEnabled = true;
-    pipeline.imageProcessing.vignetteWeight = 0.72;
+    pipeline.imageProcessing.vignetteWeight = 0.55;
     pipeline.imageProcessing.vignetteStretch = 0.55;
     pipeline.grainEnabled = true;
     pipeline.grain.intensity = 6;
@@ -215,6 +215,14 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
       hold: (seconds) => sim.hold(seconds),
       setFrequency: (mhz) => sim.setFrequency(mhz),
       setHudVisible: (visible) => hud.setVisible(visible),
+      setFlashlight: (on) => {
+        sim.flashlight = on;
+      },
+      stats: () => ({
+        fps,
+        activeMeshes: scene.getActiveMeshes().length,
+        triangles: Math.round(scene.getActiveIndices() / 3),
+      }),
       kill: () => sim.kill(),
       save: () => localStorage.setItem("hollow-v1-save", sim.serialize()),
       load: () => {

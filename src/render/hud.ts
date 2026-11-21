@@ -39,7 +39,7 @@ export class Hud {
       <aside id="journal"></aside>
       <section id="pause">
         <h2>Pause</h2>
-        <label>Lysstyrke <input id="bright" type="range" min="0.7" max="1.7" step="0.02" value="1.32" /></label>
+        <label>Lysstyrke <input id="bright" type="range" min="0.7" max="1.7" step="0.02" value="1.12" /></label>
         <button id="resume" type="button">Fortsæt</button>
         <button id="save" type="button">Gem</button>
         <button id="load" type="button">Indlæs</button>

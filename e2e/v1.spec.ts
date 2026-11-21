@@ -22,7 +22,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
       { x, z, lookX, lookZ },
     );
     await page.waitForTimeout(700);
-    await page.screenshot({ path: `docs/evidence/v1/${name}.png` });
+    await page.screenshot({ path: `docs/evidence/v2.1/${name}.png` });
   };
 
   await shot("01-arrival", 2.2, 8, 40, 70);
@@ -40,7 +40,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(600);
-  await page.screenshot({ path: "docs/evidence/v1/04-power.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1/04-power.png" });
   await page.evaluate(() => {
     const api = window.__HOLLOW__;
     api?.placePlayer(112.4, 142.6);
@@ -48,7 +48,7 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(500);
-  await page.screenshot({ path: "docs/evidence/v1/05-interior.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1/05-interior.png" });
   await page.evaluate(() => {
     const api = window.__HOLLOW__;
     api?.placeMonster(101, 120);
@@ -57,7 +57,25 @@ test("plays the first night and records the hero shots", async ({ page }) => {
     api?.setHudVisible(false);
   });
   await page.waitForTimeout(700);
-  await page.screenshot({ path: "docs/evidence/v1/07-monster.png" });
+  await page.screenshot({ path: "docs/evidence/v2.1/07-monster.png" });
+  await page.evaluate(() => {
+    const api = window.__HOLLOW__;
+    api?.setFlashlight(true);
+    api?.placePlayer(18, 36);
+    api?.lookAt(24, 48);
+    api?.setHudVisible(false);
+  });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: "docs/evidence/v2.1/08-flashlight.png" });
+  await page.evaluate(() => {
+    const api = window.__HOLLOW__;
+    api?.setFlashlight(false);
+    api?.placePlayer(100, 128);
+    api?.lookAt(110, 145);
+    api?.setHudVisible(false);
+  });
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: "docs/evidence/v2.1/09-lights-off.png" });
 
   const mission = await page.evaluate(() => {
     const api = window.__HOLLOW__;
@@ -68,9 +86,15 @@ test("plays the first night and records the hero shots", async ({ page }) => {
   });
   expect(mission === "INSPECT_POWER" || mission === "DIVERT_POWER" || mission === "TUNE_SIGNAL").toBeTruthy();
 
-  const fps = await page.evaluate(() => window.__HOLLOW__?.fps() ?? 0);
-  const report = { fps, errors, mission, seed: 170147 };
-  writeFileSync("docs/evidence/v1/report.json", JSON.stringify(report, null, 2));
+  const samples: number[] = [];
+  for (let i = 0; i < 4; i += 1) {
+    await page.waitForTimeout(400);
+    samples.push(await page.evaluate(() => window.__HOLLOW__?.fps() ?? 0));
+  }
+  const stats = await page.evaluate(() => window.__HOLLOW__?.stats());
+  const fps = samples.reduce((sum, value) => sum + value, 0) / samples.length;
+  const report = { fps, samples, stats, errors, mission, seed: 170147 };
+  writeFileSync("docs/evidence/v2.1/report.json", JSON.stringify(report, null, 2));
   expect(errors, errors.join("\n")).toEqual([]);
   expect(fps).toBeGreaterThan(0);
 });
