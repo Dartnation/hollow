@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BODY } from "../src/sim/balance";
-import { BRIDGE_ROUTE, HUT, SLOPE_ROUTE } from "../src/sim/layout";
+import { BRIDGE_ROUTE, ESCAPE_ROUTE, HUT, MONSTER_HOME, SLOPE_ROUTE } from "../src/sim/layout";
+import { distanceToPolyline } from "../src/sim/rng";
 import { findPath, pathInside } from "../src/sim/nav";
 import { polylineLength } from "../src/sim/rng";
 import { resolveMove } from "../src/sim/movement";
@@ -78,5 +79,33 @@ describe("forest layout", () => {
     const path = findPath(world.grid, { x: 2.4, z: 6.5 }, { x: 110, z: 136 });
     expect(path).not.toBeNull();
     expect(polylineLength(path ?? [])).toBeGreaterThan(80);
+  });
+
+  it("keeps both routes and the escape walkable", () => {
+    const bridge = findPath(world.grid, BRIDGE_ROUTE[0] ?? { x: 2.2, z: 6 }, BRIDGE_ROUTE[BRIDGE_ROUTE.length - 1] ?? { x: 110, z: 139 });
+    const slope = findPath(world.grid, SLOPE_ROUTE[0] ?? { x: 2.2, z: 6 }, SLOPE_ROUTE[SLOPE_ROUTE.length - 1] ?? { x: 106, z: 139 });
+    const escape = findPath(world.grid, ESCAPE_ROUTE[0] ?? { x: 140, z: 155 }, ESCAPE_ROUTE[ESCAPE_ROUTE.length - 1] ?? { x: 175, z: 205 });
+    expect(bridge).not.toBeNull();
+    expect(slope).not.toBeNull();
+    expect(escape).not.toBeNull();
+  });
+
+  it("fills the arrival view without putting trunks on the routes", () => {
+    expect(world.trees.length).toBeGreaterThan(900);
+    let nearest = Number.POSITIVE_INFINITY;
+    for (const tree of world.trees) {
+      nearest = Math.min(nearest, Math.hypot(tree.x - 2.2, tree.z - 8));
+      const gap = Math.min(
+        distanceToPolyline(tree.x, tree.z, BRIDGE_ROUTE),
+        distanceToPolyline(tree.x, tree.z, SLOPE_ROUTE),
+        distanceToPolyline(tree.x, tree.z, ESCAPE_ROUTE),
+      );
+      expect(gap).toBeGreaterThan(2.05);
+    }
+    expect(nearest).toBeGreaterThan(2);
+    expect(nearest).toBeLessThan(14);
+    let home = Number.POSITIVE_INFINITY;
+    for (const tree of world.trees) home = Math.min(home, Math.hypot(tree.x - MONSTER_HOME.x, tree.z - MONSTER_HOME.z));
+    expect(home).toBeGreaterThan(4);
   });
 });

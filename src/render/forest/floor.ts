@@ -59,8 +59,8 @@ function paintFloor(scene: Scene, size: number): DynamicTexture {
         distanceToPolyline(wx, wz, SLOPE_ROUTE),
         distanceToPolyline(wx, wz, ESCAPE_ROUTE),
       );
-      if (path < 3.4) {
-        const t = 1 - path / 3.4;
+      if (path < 1.6) {
+        const t = 1 - path / 1.6;
         r = r * (1 - t) + 112 * t;
         g = g * (1 - t) + 90 * t;
         b = b * (1 - t) + 68 * t;
@@ -76,7 +76,7 @@ function paintFloor(scene: Scene, size: number): DynamicTexture {
         g = g * (1 - t) + 42 * t;
         b = b * (1 - t) + 46 * t;
       }
-      if (hash(wx * 1.7, wz * 1.7) > 0.72 && path > 2) {
+      if (hash(wx * 1.7, wz * 1.7) > 0.52 && path > 1.15) {
         g += 16;
         r -= 6;
       }

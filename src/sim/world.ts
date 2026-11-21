@@ -229,53 +229,80 @@ function borderBoxes(): Aabb[] {
 }
 
 function clearance(x: number, z: number): boolean {
-  if (distanceToPolyline(x, z, BRIDGE_ROUTE) < 6.3) return false;
-  if (distanceToPolyline(x, z, SLOPE_ROUTE) < 5.5) return false;
-  if (distanceToPolyline(x, z, ESCAPE_ROUTE) < 5.6) return false;
-  if (distance2(x, z, 0, 4) < 9) return false;
-  if (distance2(x, z, LANDMARKS.fork.x, LANDMARKS.fork.z) < 8) return false;
-  if (distance2(x, z, LANDMARKS.passage.x, LANDMARKS.passage.z) < 8) return false;
-  if (distance2(x, z, MONSTER_HOME.x, MONSTER_HOME.z) < 7) return false;
+  if (distanceToPolyline(x, z, BRIDGE_ROUTE) < 2.35) return false;
+  if (distanceToPolyline(x, z, SLOPE_ROUTE) < 2.2) return false;
+  if (distanceToPolyline(x, z, ESCAPE_ROUTE) < 2.25) return false;
+  if (distance2(x, z, 2.4, 6.5) < 4.2) return false;
+  if (distance2(x, z, 0, 4) < 5) return false;
+  if (distance2(x, z, LANDMARKS.fork.x, LANDMARKS.fork.z) < 4.2) return false;
+  if (distance2(x, z, LANDMARKS.passage.x, LANDMARKS.passage.z) < 5) return false;
+  if (distance2(x, z, MONSTER_HOME.x, MONSTER_HOME.z) < 6) return false;
   for (const point of PATROL) {
-    if (distance2(x, z, point.x, point.z) < 5) return false;
+    if (distance2(x, z, point.x, point.z) < 3.4) return false;
   }
-  if (x > HUT.minX - 6 && x < HUT.maxX + 8 && z > HUT.minZ - 8 && z < HIDE.maxZ + 3) return false;
-  if (x > SHED.minX - 5 && x < SHED.maxX + 6 && z > SHED.minZ - 5 && z < SHED.maxZ + 6) return false;
+  if (x > HUT.minX - 2.2 && x < HUT.maxX + 2.8 && z > HUT.minZ - 2.4 && z < HUT.maxZ + 2.6) return false;
+  if (x > HIDE.minX - 1.2 && x < HIDE.maxX + 1.4 && z > HIDE.minZ - 1.2 && z < HIDE.maxZ + 1.6) return false;
+  if (x > SHED.minX - 2 && x < SHED.maxX + 2.8 && z > SHED.minZ - 2 && z < SHED.maxZ + 2.8) return false;
   if (bridgeQuery(x, z)) return false;
+  if (distance2(x, z, INTERACT.sign.x, INTERACT.sign.z) < 2.3) return false;
+  if (distance2(x, z, INTERACT.bridgeSign.x, INTERACT.bridgeSign.z) < 2.2) return false;
+  if (distance2(x, z, INTERACT.slopeSign.x, INTERACT.slopeSign.z) < 2.2) return false;
+  if (distance2(x, z, INTERACT.antenna.x, INTERACT.antenna.z) < 2.4) return false;
+  return true;
+}
+
+function tooClose(trees: readonly Tree[], x: number, z: number, gap: number): boolean {
+  const gap2 = gap * gap;
+  for (let i = trees.length - 1; i >= 0; i -= 1) {
+    const other = trees[i];
+    if (!other) continue;
+    const dx = other.x - x;
+    const dz = other.z - z;
+    if (dx * dx + dz * dz < gap2) return true;
+  }
+  return false;
+}
+
+function pushTree(trees: Tree[], x: number, z: number, rng: () => number, gap: number): boolean {
+  if (x < WORLD.minX + 4 || x > WORLD.maxX - 4 || z < WORLD.minZ + 4 || z > WORLD.maxZ - 4) return false;
+  if (!clearance(x, z) || tooClose(trees, x, z, gap)) return false;
+  const roll = rng();
+  const kind: Tree["kind"] = roll > 0.84 ? 3 : roll > 0.58 ? 1 : roll > 0.3 ? 2 : 0;
+  const scale = 0.7 + rng() * 0.9;
+  trees.push({
+    x,
+    z,
+    scale,
+    rot: rng() * Math.PI * 2,
+    tilt: (rng() - 0.5) * 0.14,
+    kind,
+    trunkRadius: 0.2 * scale,
+  });
   return true;
 }
 
 function scatter(seed: number): { trees: Tree[]; rocks: Rock[] } {
   const rng = mulberry32(seed);
   const trees: Tree[] = [];
-  let attempts = 0;
-  while (trees.length < 680 && attempts < 9000) {
-    attempts += 1;
-    const x = WORLD.minX + 8 + rng() * (WORLD.maxX - WORLD.minX - 16);
-    const z = WORLD.minZ + 8 + rng() * (WORLD.maxZ - WORLD.minZ - 16);
-    if (!clearance(x, z)) continue;
-    let crowded = false;
-    for (let i = trees.length - 1; i >= 0; i -= 1) {
-      const other = trees[i];
-      if (!other) continue;
-      if (Math.hypot(other.x - x, other.z - z) < 4.8) {
-        crowded = true;
-        break;
-      }
+  const spacing = 3.55;
+  let row = 0;
+  for (let x = WORLD.minX + 6; x < WORLD.maxX - 6 && trees.length < 2400; x += spacing) {
+    row += 1;
+    const stagger = row % 2 === 0 ? spacing * 0.5 : 0;
+    for (let z = WORLD.minZ + 6; z < WORLD.maxZ - 6 && trees.length < 2400; z += spacing) {
+      const alongRoute =
+        distanceToPolyline(x, z, BRIDGE_ROUTE) < 16 ||
+        distanceToPolyline(x, z, SLOPE_ROUTE) < 16 ||
+        distanceToPolyline(x, z, ESCAPE_ROUTE) < 14;
+      if (rng() < (alongRoute ? 0.08 : 0.36)) continue;
+      const jx = x + (rng() - 0.5) * spacing * 1.1;
+      const jz = z + stagger + (rng() - 0.5) * spacing * 1.1;
+      if (!pushTree(trees, jx, jz, rng, 2.45)) continue;
+      if (rng() > 0.38 || trees.length >= 2400) continue;
+      const ang = rng() * Math.PI * 2;
+      const dist = 2.05 + rng() * 0.85;
+      pushTree(trees, jx + Math.cos(ang) * dist, jz + Math.sin(ang) * dist, rng, 1.95);
     }
-    if (crowded) continue;
-    const roll = rng();
-    const kind: Tree["kind"] = roll > 0.86 ? 3 : roll > 0.55 ? 1 : roll > 0.28 ? 2 : 0;
-    const scale = 0.78 + rng() * 0.7;
-    trees.push({
-      x,
-      z,
-      scale,
-      rot: rng() * Math.PI * 2,
-      tilt: (rng() - 0.5) * 0.08,
-      kind,
-      trunkRadius: 0.22 * scale,
-    });
   }
 
   const rocks: Rock[] = [];
@@ -290,6 +317,7 @@ function scatter(seed: number): { trees: Tree[]; rocks: Rock[] } {
     { x: 188, z: 196 },
   ];
   anchors.forEach((anchor, index) => {
+    if (!clearance(anchor.x, anchor.z)) return;
     rocks.push({
       x: anchor.x,
       z: anchor.z,
@@ -299,13 +327,20 @@ function scatter(seed: number): { trees: Tree[]; rocks: Rock[] } {
     });
   });
   let rockAttempts = 0;
-  while (rocks.length < 28 && rockAttempts < 400) {
+  while (rocks.length < 56 && rockAttempts < 800) {
     rockAttempts += 1;
-    const x = 10 + rng() * 190;
-    const z = 60 + rng() * 150;
-    if (distanceToPolyline(x, z, BRIDGE_ROUTE) < 4.2 && distanceToPolyline(x, z, SLOPE_ROUTE) < 3.4) continue;
-    if (!clearance(x, z) && distanceToPolyline(x, z, SLOPE_ROUTE) > 9) continue;
-    rocks.push({ x, z, scale: 0.55 + rng() * 0.9, rot: rng() * 6, height: 0.55 + rng() * 0.9 });
+    const x = WORLD.minX + 8 + rng() * (WORLD.maxX - WORLD.minX - 16);
+    const z = WORLD.minZ + 8 + rng() * (WORLD.maxZ - WORLD.minZ - 16);
+    if (!clearance(x, z)) continue;
+    let crowded = false;
+    for (const other of rocks) {
+      if (distance2(other.x, other.z, x, z) < 7) {
+        crowded = true;
+        break;
+      }
+    }
+    if (crowded) continue;
+    rocks.push({ x, z, scale: 0.45 + rng() * 0.85, rot: rng() * 6, height: 0.4 + rng() * 0.85 });
   }
   return { trees, rocks };
 }

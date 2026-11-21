@@ -1,5 +1,7 @@
 # Hollow V2.1 — skov, terræn og lys
 
+V2.1R fortsætter i `docs/V2_1R_FOREST.md`. Denne side beskriver den første V2.1-leverance og er ikke godkendt.
+
 Grafikfase oven på den spilbare V1-kode. Mission, styring, hytteinteriør, monster-AI, radio, strøm og checkpoints er uændrede. Ingen nye lyde og ingen nye missioner. Versionen er ikke godkendt.
 
 ## Hvad der er ændret

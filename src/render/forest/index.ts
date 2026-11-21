@@ -1,27 +1,25 @@
-import {
-  CascadedShadowGenerator,
-  InstancedMesh,
-  Matrix,
-  Mesh,
-  Quaternion,
-  Scene,
-  ShadowGenerator,
-  Vector3,
-  type DirectionalLight,
-} from "@babylonjs/core";
+import { CascadedShadowGenerator, Matrix, Scene, ShadowGenerator, Vector3, type DirectionalLight } from "@babylonjs/core";
 import type { GameSim } from "../../sim/game";
 import type { Tree } from "../../sim/types";
 import { groundHeight } from "../../sim/world";
 import { buildForestFloor } from "./floor";
-import { applyTreeTransform, buildTreePrototypes, prototypeIndex, type TreePrototype } from "./trees";
+import { FOREST_REFRESH_DISTANCE, forestMoved, lodTier, type LodTier } from "./lod";
+import { placeThin } from "./thin";
 import { buildStones } from "./rocks";
+import { buildTreePrototypes, prototypeIndex, treeMatrix } from "./trees";
 import { buildUndergrowth } from "./undergrowth";
-
-const NEAR = 28;
 
 export interface Forest {
   update(camera: Vector3, time: number): void;
   useShadows(generator: ShadowGenerator): void;
+}
+
+interface PlacedTree {
+  proto: number;
+  x: number;
+  z: number;
+  matrix: Matrix;
+  tier: LodTier;
 }
 
 export function createForest(scene: Scene, sim: GameSim, moon: DirectionalLight): Forest {
@@ -29,64 +27,66 @@ export function createForest(scene: Scene, sim: GameSim, moon: DirectionalLight)
   buildUndergrowth(scene);
   buildStones(scene, sim);
   const prototypes = buildTreePrototypes(scene);
-  const generators: ShadowGenerator[] = [];
   try {
     const csm = new CascadedShadowGenerator(1024, moon);
-    csm.numCascades = 2;
-    csm.lambda = 0.7;
-    csm.shadowMaxZ = 46;
+    csm.numCascades = 1;
+    csm.lambda = 0.85;
+    csm.shadowMaxZ = 34;
     csm.stabilizeCascades = true;
     csm.autoCalcDepthBounds = true;
     csm.usePercentageCloserFiltering = true;
     csm.filteringQuality = ShadowGenerator.QUALITY_LOW;
     csm.bias = 0.006;
-    generators.push(csm);
+    for (const proto of prototypes) csm.addShadowCaster(proto.bark, false);
   } catch {
     /* Headless WebGL can refuse cascaded maps. The forest still renders. */
   }
 
-  let near: InstancedMesh[] = [];
-  const bases = new Map<number, Quaternion>();
-  let last = new Vector3(2.4, 2, 8);
+  const placed: PlacedTree[] = sim.world.trees.map((tree) => {
+    const pose = treeMatrix(tree, groundHeight(tree.x, tree.z));
+    return {
+      proto: prototypeIndex(tree, variant(tree)),
+      x: tree.x,
+      z: tree.z,
+      matrix: Matrix.Compose(pose.scaling, pose.rotation, pose.position),
+      tier: "far",
+    };
+  });
+  const anchor = new Vector3(Number.NaN, 0, Number.NaN);
 
-  const refresh = (cam: Vector3) => {
-    for (const mesh of near) {
-      for (const generator of generators) generator.removeShadowCaster(mesh);
-      mesh.dispose();
+  const sync = (cam: Vector3, force: boolean) => {
+    if (!force && !forestMoved(anchor.x, anchor.z, cam.x, cam.z)) return;
+    let changed = force;
+    for (const tree of placed) {
+      const tier = lodTier(Math.hypot(tree.x - cam.x, tree.z - cam.z));
+      if (tier !== tree.tier) {
+        tree.tier = tier;
+        changed = true;
+      }
     }
-    near = [];
-    bases.clear();
-    const far: Tree[][] = prototypes.map(() => []);
-    for (const tree of sim.world.trees) {
-      const index = prototypeIndex(tree, variant(tree));
-      const distance = Math.hypot(tree.x - cam.x, tree.z - cam.z);
-      if (distance < NEAR) spawnNear(prototypes[index], tree, near, bases, generators);
-      else far[index]?.push(tree);
+    anchor.copyFrom(cam);
+    if (!changed) return;
+    const near: Matrix[][] = prototypes.map(() => []);
+    const far: Matrix[][] = prototypes.map(() => []);
+    for (const tree of placed) {
+      const bucket = tree.tier === "near" ? near : far;
+      bucket[tree.proto]?.push(tree.matrix);
     }
     prototypes.forEach((proto, index) => {
-      park(proto.bark, far[index] ?? []);
-      if (proto.foliage) park(proto.foliage, far[index] ?? []);
+      placeThin(proto.bark, near[index] ?? []);
+      if (proto.foliage) placeThin(proto.foliage, near[index] ?? []);
+      placeThin(proto.far, far[index] ?? []);
     });
   };
-  refresh(last);
+
+  sync(new Vector3(2.4, 2, 8), true);
 
   return {
     useShadows(generator) {
-      generators.push(generator);
-      for (const mesh of near) generator.addShadowCaster(mesh, false);
+      for (const proto of prototypes) generator.addShadowCaster(proto.bark, false);
     },
-    update(camera, time) {
-      if (Vector3.DistanceSquared(last, camera) > 16) {
-        last.copyFrom(camera);
-        refresh(camera);
-      }
-      const gust = Math.sin(time * 0.85) * 0.018;
-      for (const mesh of near) {
-        if (!mesh.name.startsWith("near-leaf")) continue;
-        const base = bases.get(mesh.uniqueId);
-        if (!base) continue;
-        mesh.rotationQuaternion = base.multiply(Quaternion.FromEulerAngles(0, 0, gust + Math.sin(mesh.position.x) * 0.01));
-      }
+    update(camera) {
+      sync(camera, false);
     },
   };
 }
@@ -96,56 +96,4 @@ function variant(tree: Tree): number {
   return Math.abs(Math.floor((n - Math.floor(n)) * 8));
 }
 
-function spawnNear(
-  proto: TreePrototype | undefined,
-  tree: Tree,
-  near: InstancedMesh[],
-  bases: Map<number, Quaternion>,
-  generators: readonly ShadowGenerator[],
-): void {
-  if (!proto) return;
-  const y = groundHeight(tree.x, tree.z);
-  const spawned: InstancedMesh[] = [];
-  const bark = proto.bark.createInstance(`near-bark-${tree.x.toFixed(1)}`);
-  applyTreeTransform(bark, tree, y);
-  spawned.push(bark);
-  if (proto.foliage) {
-    const leaf = proto.foliage.createInstance(`near-leaf-${tree.x.toFixed(1)}`);
-    applyTreeTransform(leaf, tree, y);
-    if (leaf.rotationQuaternion) bases.set(leaf.uniqueId, leaf.rotationQuaternion.clone());
-    spawned.push(leaf);
-  }
-  for (const mesh of spawned) {
-    near.push(mesh);
-    for (const generator of generators) generator.addShadowCaster(mesh, false);
-  }
-}
-
-function park(mesh: Mesh, trees: readonly Tree[]): void {
-  if (!trees.length) {
-    mesh.position.set(0, -40, 0);
-    mesh.scaling.setAll(0);
-    mesh.thinInstanceCount = 0;
-    return;
-  }
-  const first = trees[0];
-  if (!first) return;
-  applyTreeTransform(mesh, first, groundHeight(first.x, first.z));
-  const rest = trees.slice(1);
-  if (!rest.length) {
-    mesh.thinInstanceCount = 0;
-    return;
-  }
-  const buffer = new Float32Array(rest.length * 16);
-  const matrix = new Matrix();
-  rest.forEach((tree, index) => {
-    Matrix.ComposeToRef(
-      new Vector3(tree.scale, tree.scale, tree.scale),
-      Quaternion.RotationYawPitchRoll(tree.rot, tree.tilt, 0),
-      new Vector3(tree.x, groundHeight(tree.x, tree.z), tree.z),
-      matrix,
-    );
-    matrix.copyToArray(buffer, index * 16);
-  });
-  mesh.thinInstanceSetBuffer("matrix", buffer, 16, false);
-}
+export { FOREST_REFRESH_DISTANCE };
