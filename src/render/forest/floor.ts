@@ -1,6 +1,7 @@
-import { DynamicTexture, MeshBuilder, Scene, VertexBuffer } from "@babylonjs/core";
+import { DynamicTexture, Mesh, MeshBuilder, Scene, Texture, VertexBuffer } from "@babylonjs/core";
 import { BRIDGE_ROUTE, ESCAPE_ROUTE, SLOPE_ROUTE, WORLD } from "../../sim/layout";
 import { distanceToPolyline } from "../../sim/rng";
+import { backgroundPlaneY, lowestTerrain } from "../../sim/terrainBounds";
 import { streamDistance, terrainHeight } from "../../sim/world";
 import { pbr } from "../materials";
 import { paintGroundDetail } from "./textures";
@@ -15,20 +16,12 @@ export function buildForestFloor(scene: Scene): void {
   const depth = WORLD.maxZ - WORLD.minZ;
   const ground = MeshBuilder.CreateGround("forest-floor", { width, height: depth, subdivisions: 96, updatable: true }, scene);
   ground.position.set((WORLD.minX + WORLD.maxX) / 2, 0, (WORLD.minZ + WORLD.maxZ) / 2);
-  const positions = ground.getVerticesData(VertexBuffer.PositionKind);
-  if (positions) {
-    for (let i = 0; i < positions.length; i += 3) {
-      const x = (positions[i] ?? 0) + ground.position.x;
-      const z = (positions[i + 2] ?? 0) + ground.position.z;
-      if (positions[i + 1] === undefined) continue;
-      positions[i + 1] = terrainHeight(x, z);
-    }
-    ground.updateVerticesData(VertexBuffer.PositionKind, positions);
-    ground.createNormals(true);
-  }
-  ground.refreshBoundingInfo();
+  displaceToTerrain(ground);
   const material = pbr(scene, "ground", "#f0ebe4", 0.94, 0);
-  material.albedoTexture = paintFloor(scene, 1024);
+  const albedo = paintFloor(scene, 1024);
+  albedo.wrapU = Texture.CLAMP_ADDRESSMODE;
+  albedo.wrapV = Texture.CLAMP_ADDRESSMODE;
+  material.albedoTexture = albedo;
   material.bumpTexture = paintBump(scene, 512);
   const detail = paintGroundDetail(scene);
   detail.uScale = width / 3.2;
@@ -41,14 +34,49 @@ export function buildForestFloor(scene: Scene): void {
   ground.material = material;
   ground.receiveShadows = true;
 
-  const skirt = MeshBuilder.CreateGround("forest-skirt", { width: width + 280, height: depth + 280 }, scene);
-  skirt.position.set(ground.position.x, -0.05, ground.position.z);
+  const reach = 48;
+  const midX = (WORLD.minX + WORLD.maxX) / 2;
+  const midZ = (WORLD.minZ + WORLD.maxZ) / 2;
+  const bands = [
+    { name: "west", x: WORLD.minX - reach / 2, z: midZ, w: reach, d: depth + reach * 2 },
+    { name: "east", x: WORLD.maxX + reach / 2, z: midZ, w: reach, d: depth + reach * 2 },
+    { name: "south", x: midX, z: WORLD.minZ - reach / 2, w: width, d: reach },
+    { name: "north", x: midX, z: WORLD.maxZ + reach / 2, w: width, d: reach },
+  ];
+  const marginMat = pbr(scene, "ground-margin", "#d9cfc2", 0.96, 0);
+  marginMat.albedoTexture = detail;
+  marginMat.bumpTexture = material.bumpTexture;
+  for (const band of bands) {
+    const margin = MeshBuilder.CreateGround(`forest-margin-${band.name}`, { width: band.w, height: band.d, subdivisions: 12, updatable: true }, scene);
+    margin.position.set(band.x, 0, band.z);
+    displaceToTerrain(margin);
+    margin.material = marginMat;
+    margin.receiveShadows = true;
+    margin.isPickable = false;
+  }
+
+  const skirt = MeshBuilder.CreateGround("forest-skirt", { width: width + reach * 2 + 80, height: depth + reach * 2 + 80 }, scene);
+  skirt.position.set(midX, backgroundPlaneY(lowestTerrain()), midZ);
   const skirtMat = pbr(scene, "forest-skirt", "#101412", 1, 0);
   skirtMat.environmentIntensity = 0;
-  skirtMat.directIntensity = 0.15;
+  skirtMat.directIntensity = 0.2;
   skirt.material = skirtMat;
   skirt.isPickable = false;
   skirt.receiveShadows = false;
+}
+
+function displaceToTerrain(mesh: Mesh): void {
+  const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
+  if (!positions) return;
+  for (let i = 0; i < positions.length; i += 3) {
+    const x = (positions[i] ?? 0) + mesh.position.x;
+    const z = (positions[i + 2] ?? 0) + mesh.position.z;
+    if (positions[i + 1] === undefined) continue;
+    positions[i + 1] = terrainHeight(x, z);
+  }
+  mesh.updateVerticesData(VertexBuffer.PositionKind, positions);
+  mesh.createNormals(true);
+  mesh.refreshBoundingInfo();
 }
 
 function paintFloor(scene: Scene, size: number): DynamicTexture {

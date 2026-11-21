@@ -1,0 +1,13 @@
+{
+  "seed": 170147,
+  "viewport": "1920x1080",
+  "devicePixelRatio": 1,
+  "camera": { "x": 2.2, "z": 8, "lookX": 40, "lookZ": 70 },
+  "frames": 90,
+  "avgMs": 16.47,
+  "p95Ms": 16.8,
+  "maxMs": 17.1,
+  "stats": { "fps": 60.12, "activeMeshes": 109, "triangles": 354228 },
+  "audio": { "loaded": 10, "context": "running" },
+  "note": "Same arrival camera and window class as the V2.1S sample of 16.56 ms and 351924 triangles. Forest models are still the V2.1S cards. The showroom is not in this measurement."
+}

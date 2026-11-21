@@ -19,6 +19,7 @@ import type { GameSim } from "../sim/game";
 import { BRIDGE, INTERACT, LANDMARKS, PALETTE, SHED } from "../sim/layout";
 import { bridgeHeight, groundHeight, terrainHeight } from "../sim/world";
 import { createForest } from "./forest";
+import { buildShowroom } from "./forest/showroom";
 import { pbr } from "./materials";
 
 export interface WorldView {
@@ -45,7 +46,9 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
   lampMat.emissiveColor = Color3.FromHexString("#d5ecdf");
   lampMat.emissiveIntensity = 0;
 
-  const forest = createForest(scene, sim, moon);
+  const showroom = new URLSearchParams(location.search).get("showroom") === "1";
+  const forest = showroom ? null : createForest(scene, sim, moon);
+  if (showroom) buildShowroom(scene);
   buildWater(scene);
   buildBridge(scene, woodDark);
   buildCar(scene, metal);
@@ -54,9 +57,14 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
   const shed = buildShed(scene, woodDark, metal, lampMat);
   buildPassage(scene, stone, lampMat);
   const monster = buildMonster(scene);
+  if (showroom) {
+    monster.root.setEnabled(false);
+    scene.getMeshByName("car")?.setEnabled(false);
+    scene.getMeshByName("car-cabin")?.setEnabled(false);
+  }
   const lights = buildLights(scene, floorY, camera);
-  forest.useShadows(lights.shadows);
-  buildRain(scene, camera);
+  if (forest) forest.useShadows(lights.shadows);
+  if (!showroom) buildRain(scene, camera);
 
   const exposure = { value: 1.12 };
   let phase = 0;
@@ -84,7 +92,7 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
       lights.passage.intensity = lampMat.emissiveIntensity > 0.2 ? 4 : 0;
       shed.rotor.rotation.z += simNow.mission.radio ? dt * 6 : 0;
       poseMonster(monster, simNow, phase, dt);
-      forest.update(camera.position, phase);
+      forest?.update(camera.position, phase);
       const forward = camera.getDirection(Vector3.Forward());
       lights.flashlight.position.copyFrom(camera.position);
       lights.flashlight.direction.copyFrom(forward);

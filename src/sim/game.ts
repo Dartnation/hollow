@@ -191,9 +191,9 @@ export class GameSim {
     this.path = null;
   }
 
-  lookAt(x: number, z: number): void {
+  lookAt(x: number, z: number, pitch = 0): void {
     this.player.yaw = Math.atan2(x - this.player.x, z - this.player.z);
-    this.player.pitch = 0;
+    this.player.pitch = pitch;
   }
 
   setFrequency(mhz: number): void {
