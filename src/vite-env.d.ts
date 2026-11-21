@@ -8,7 +8,7 @@ interface HollowPublicApi {
   step(dt: number): void;
   placePlayer(x: number, z: number, yaw?: number): void;
   placeMonster(x: number, z: number): void;
-  lookAt(x: number, z: number): void;
+  lookAt(x: number, z: number, pitch?: number): void;
   interact(): string | null;
   hold(seconds: number): void;
   setFrequency(mhz: number): void;

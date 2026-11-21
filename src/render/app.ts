@@ -21,7 +21,8 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   const params = new URLSearchParams(location.search);
   const seed = Number(params.get("seed")) || SEED_DEFAULT;
   const testMode = params.get("test") === "1";
-  const inspect = params.get("inspect") === "1";
+  const showroom = params.get("showroom") === "1";
+  const inspect = params.get("inspect") === "1" || showroom;
   const errors: string[] = [];
   window.addEventListener("error", (event) => errors.push(event.message));
   window.addEventListener("unhandledrejection", (event) => errors.push(String(event.reason)));
@@ -95,6 +96,10 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
   const begin = () => {
     sim.start();
     void audio.resume();
+    if (showroom) {
+      sim.placePlayer(0, -6);
+      sim.lookAt(0, 10, 0.12);
+    }
     if (!testMode) canvas.requestPointerLock();
   };
 
@@ -211,7 +216,7 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
       },
       placePlayer: (x, z, yaw) => sim.placePlayer(x, z, yaw),
       placeMonster: (x, z) => sim.placeMonster(x, z),
-      lookAt: (x, z) => sim.lookAt(x, z),
+      lookAt: (x, z, pitch) => sim.lookAt(x, z, pitch),
       interact: () => sim.interact(),
       hold: (seconds) => sim.hold(seconds),
       setFrequency: (mhz) => sim.setFrequency(mhz),

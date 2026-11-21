@@ -60,6 +60,10 @@ export class MeshAccum {
     this.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
 
+  indexCount(): number {
+    return this.indices.length / 3;
+  }
+
   bake(name: string, scene: Scene): Mesh {
     const mesh = new Mesh(name, scene);
     const data = new VertexData();

@@ -125,6 +125,78 @@ export function paintTuft(scene: Scene): Texture {
   return finish(texture, false);
 }
 
+/** A small needle cluster for a twig, not a crown-sized shelf. */
+export function paintCluster(scene: Scene): Texture {
+  const size = 128;
+  const texture = new DynamicTexture("needle-cluster", { width: size, height: size }, scene, false);
+  const ctx = texture.getContext();
+  const image = ctx.getImageData(0, 0, size, size);
+  const data = image.data;
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const u = x / (size - 1) - 0.5;
+      const v = y / (size - 1) - 0.5;
+      const radius = Math.hypot(u, v) * 2;
+      const spoke = 0.55 + 0.45 * Math.abs(Math.sin(Math.atan2(v, u) * 11));
+      const inside = radius < 0.72 * spoke && radius > 0.08;
+      const shade = inside ? 78 + (1 - radius) * 36 : 0;
+      const i = (y * size + x) * 4;
+      data[i] = shade * 0.42;
+      data[i + 1] = shade * 0.58;
+      data[i + 2] = shade * 0.46;
+      data[i + 3] = inside ? 255 : 0;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  return finish(texture, false);
+}
+
+/** Close-up forest floor for the showroom patch: moss, needles, pebbles. */
+export function paintSampleGround(scene: Scene): Texture {
+  const size = 512;
+  const texture = new DynamicTexture("sample-ground", { width: size, height: size }, scene, false);
+  const ctx = texture.getContext();
+  const image = ctx.getImageData(0, 0, size, size);
+  const data = image.data;
+  const sample = (x: number, y: number) => hash(((x % size) + size) % size, ((y % size) + size) % size);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const n = sample(x * 1.7, y * 1.3);
+      const moss = sample(Math.floor(x / 18), Math.floor(y / 18)) > 0.55 && sample(x, y) > 0.35;
+      const pebble = sample(x * 0.07, y * 0.09) > 0.93;
+      const needle = sample(x * 3.1, y * 0.4) > 0.86 && sample(x + 9, y) > 0.5;
+      let r = 92 + n * 28;
+      let g = 74 + n * 18;
+      let b = 52 + n * 12;
+      if (moss) {
+        r = 58 + n * 16;
+        g = 78 + n * 20;
+        b = 48 + n * 10;
+      }
+      if (pebble) {
+        r = 110 + n * 20;
+        g = 104 + n * 16;
+        b = 92 + n * 12;
+      }
+      if (needle) {
+        r = 46;
+        g = 58;
+        b = 36;
+      }
+      const i = (y * size + x) * 4;
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+      data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  texture.update();
+  texture.wrapU = Texture.WRAP_ADDRESSMODE;
+  texture.wrapV = Texture.WRAP_ADDRESSMODE;
+  return texture;
+}
+
 /** Tileable close-up soil: needles, moss and damp earth. */
 export function paintGroundDetail(scene: Scene): Texture {
   const size = 256;

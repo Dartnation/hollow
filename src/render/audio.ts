@@ -10,9 +10,6 @@ interface Loop {
   panner?: PannerNode;
 }
 
-/** Playback stays off until a later audio pass. Buffers still load so tests can count them. */
-const PLAYBACK = false;
-
 export class AudioEngine {
   readonly context = new AudioContext();
   loaded = 0;
@@ -54,7 +51,6 @@ export class AudioEngine {
         this.loaded += 1;
       }),
     );
-    if (!PLAYBACK) return;
     this.ambience = this.loop("ambience", 0.55);
     this.rain = this.loop("rain", 0.22);
     this.generator = this.loop("generator", 0, this.worldPoint(LANDMARKS.shed.x, LANDMARKS.shed.z));
@@ -64,12 +60,11 @@ export class AudioEngine {
   }
 
   async resume(): Promise<void> {
-    if (!PLAYBACK) return;
     if (this.context.state !== "running") await this.context.resume();
   }
 
   update(sim: GameSim, cues: AudioCue[]): void {
-    if (!PLAYBACK || this.context.state !== "running") return;
+    if (this.context.state !== "running") return;
     const listener = this.context.listener;
     const yaw = sim.player.yaw;
     const pitch = sim.player.pitch;
