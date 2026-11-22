@@ -18,8 +18,8 @@ export const FOREST_DRAW_DISTANCE = 72;
 
 export function lodTier(distance: number, previous: LodTier | null): LodTier {
   if (previous === "near") {
-    if (distance < 16) return "near";
-    return distance < 38 ? "mid" : "far";
+    if (distance < 20) return "near";
+    return distance < 42 ? "mid" : "far";
   }
   if (previous === "mid") {
     if (distance < 11) return "near";
@@ -30,7 +30,7 @@ export function lodTier(distance: number, previous: LodTier | null): LodTier {
     if (distance > 36) return "far";
     return distance < 12 ? "near" : "mid";
   }
-  if (distance < 13) return "near";
-  if (distance < 34) return "mid";
+  if (distance < 16) return "near";
+  if (distance < 40) return "mid";
   return "far";
 }

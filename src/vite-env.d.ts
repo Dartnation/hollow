@@ -32,7 +32,7 @@ interface HollowSnapshot {
   radioLocked: boolean;
   antenna: boolean;
   notebook: boolean;
-  doors: { front: boolean; side: boolean; shed: boolean };
+  doors: { front: boolean; side: boolean; shed: boolean; hunt: boolean };
   player: { x: number; y: number; z: number; yaw: number; crouching: boolean; flashlight: boolean };
   monster: {
     state: string;

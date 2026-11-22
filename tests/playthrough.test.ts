@@ -63,7 +63,7 @@ describe("vertical slice", () => {
     expect(["SUSPICIOUS", "INVESTIGATE", "SEARCH"]).toContain(sim.brain.state);
 
     sim.placePlayer(110.2, 145, 0);
-    sim.mission.doors = { front: false, side: false, shed: false };
+    sim.mission.doors = { front: false, side: false, shed: false, hunt: false };
     sim.placeMonster(110, 132);
     sim.monster.yaw = Math.atan2(0, 145 - 132);
     sim.brain.yaw = sim.monster.yaw;
@@ -88,7 +88,7 @@ describe("vertical slice", () => {
     expect(seenState === "CHASE" || seenState === "ATTACK").toBe(true);
     const seenZ = sim.brain.lastKnown?.z ?? 0;
     sim.placePlayer(110.2, 145, 0);
-    sim.mission.doors = { front: false, side: false, shed: false };
+    sim.mission.doors = { front: false, side: false, shed: false, hunt: false };
     sim.step(1.5);
     expect(sim.brain.lastKnown?.z).toBeCloseTo(seenZ, 0);
     const lostState: string = sim.brain.state;

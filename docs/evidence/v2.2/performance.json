@@ -1,0 +1,26 @@
+{
+  "viewport": "1920x1080 visible Chromium",
+  "seed": 170147,
+  "arrival": {
+    "avgMs": 16.512087912055165,
+    "p95Ms": 16.799999999999272,
+    "triangles": 895342,
+    "frames": 91
+  },
+  "ranger": {
+    "avgMs": 16.49120879117604,
+    "p95Ms": 16.800000000000182,
+    "triangles": 806886,
+    "frames": 91
+  },
+  "hunt": {
+    "avgMs": 16.676666666699788,
+    "p95Ms": 16.80000000000109,
+    "triangles": 608906,
+    "frames": 90
+  },
+  "baselineV21U": {
+    "triangles": 838072,
+    "note": "arrival, smoothed counter hit the 60 fps cap"
+  }
+}

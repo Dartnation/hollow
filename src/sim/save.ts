@@ -59,6 +59,7 @@ export function parseSave(raw: string): SaveData | null {
     if (!data || data.version !== 1) return null;
     if (!STATES.includes(data.mission)) return null;
     if (!data.player || !data.doors || !data.snaps) return null;
+    if (typeof data.doors.hunt !== "boolean") data.doors.hunt = false;
     if (data.lights === data.radio) return null;
     return data;
   } catch {

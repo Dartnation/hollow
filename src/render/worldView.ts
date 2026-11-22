@@ -16,6 +16,9 @@ import {
   type DirectionalLight,
 } from "@babylonjs/core";
 import type { GameSim } from "../sim/game";
+import { buildHunter } from "./cabins/hunter";
+import { hingedDoor } from "./cabins/door";
+import { buildRanger } from "./cabins/ranger";
 import { BRIDGE, INTERACT, LANDMARKS, PALETTE, SHED } from "../sim/layout";
 import { bridgeHeight, groundHeight, terrainHeight } from "../sim/world";
 import { createForest } from "./forest";
@@ -60,7 +63,8 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
   buildBridge(scene, woodDark);
   buildCar(scene, metal);
   buildSigns(scene, woodDark);
-  const doors = buildCabin(scene, floorY, wood, woodDark, stone, glass, diodeMat);
+  const doors = buildRanger(scene, floorY, glass, diodeMat);
+  const hunt = buildHunter(scene);
   const shed = buildShed(scene, woodDark, metal, lampMat);
   buildPassage(scene, stone, lampMat);
   const monster = buildMonster(scene);
@@ -88,6 +92,7 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
       swing(doors.front, open.front ? -1.35 : 0, dt);
       swing(doors.side, open.side ? 1.35 : 0, dt);
       swing(shed.door, open.shed ? -1.25 : 0, dt);
+      swing(hunt, open.hunt ? -1.25 : 0, dt);
       const lit = simNow.mission.lights;
       glass.emissiveIntensity = lit ? 0.85 : 0.02;
       lights.interior.intensity = lit ? 2.4 : 0;
@@ -200,126 +205,6 @@ function sign(scene: Scene, wood: ReturnType<typeof pbr>, x: number, z: number, 
   board.material = material;
 }
 
-function buildCabin(
-  scene: Scene,
-  floorY: number,
-  wood: ReturnType<typeof pbr>,
-  woodDark: ReturnType<typeof pbr>,
-  stone: ReturnType<typeof pbr>,
-  glass: ReturnType<typeof pbr>,
-  diodeMat: ReturnType<typeof pbr>,
-): { front: TransformNode; side: TransformNode } {
-  const foundation = MeshBuilder.CreateBox("foundation", { width: 9.4, height: 0.28, depth: 8.4 }, scene);
-  foundation.position.set(110.5, floorY + 0.08, 145);
-  foundation.material = stone;
-  wall(scene, woodDark, 107.5, floorY + 1.45, 141.02, 3, 2.7, 0.28);
-  wall(scene, woodDark, 113, floorY + 1.45, 141.02, 4, 2.7, 0.28);
-  wall(scene, woodDark, 110.5, floorY + 1.45, 149, 9, 2.7, 0.28);
-  wall(scene, woodDark, 106.16, floorY + 1.45, 145, 0.28, 2.7, 8);
-  wall(scene, woodDark, 115, floorY + 1.45, 142.5, 0.28, 2.7, 3);
-  wall(scene, woodDark, 115, floorY + 1.45, 147.5, 0.28, 2.7, 3);
-  const floor = MeshBuilder.CreateBox("floor", { width: 8.4, height: 0.08, depth: 7.2 }, scene);
-  floor.position.set(110.5, floorY + 0.08, 145);
-  floor.material = wood;
-  windowPane(scene, glass, 112.9, floorY + 1.65, 140.9, 1.5, 1.05);
-  windowPane(scene, glass, 106.2, floorY + 1.65, 146.8, 0.12, 1.05);
-  roof(scene, woodDark, floorY);
-  porch(scene, wood, woodDark, floorY);
-  const front = door(scene, wood, 109, floorY, 141.05, 2, 2.35, 0.08);
-  const side = door(scene, wood, 115.02, floorY, 144, 0.12, 2.2, 2);
-  furniture(scene, wood, woodDark, floorY, diodeMat);
-  return { front, side };
-}
-
-function wall(scene: Scene, material: ReturnType<typeof pbr>, x: number, y: number, z: number, w: number, h: number, d: number): void {
-  const mesh = MeshBuilder.CreateBox("wall", { width: w, height: h, depth: d }, scene);
-  mesh.position.set(x, y, z);
-  mesh.material = material;
-  mesh.receiveShadows = true;
-}
-
-function windowPane(scene: Scene, material: ReturnType<typeof pbr>, x: number, y: number, z: number, w: number, h: number): void {
-  const pane = MeshBuilder.CreatePlane("window", { width: w, height: h }, scene);
-  pane.position.set(x, y, z);
-  if (w < 0.3) pane.rotation.y = Math.PI / 2;
-  pane.material = material;
-}
-
-function roof(scene: Scene, material: ReturnType<typeof pbr>, floorY: number): void {
-  const left = MeshBuilder.CreateBox("roof-l", { width: 5.4, height: 0.16, depth: 10.2 }, scene);
-  left.position.set(108.15, floorY + 3.55, 145);
-  left.rotation.z = 0.42;
-  left.material = material;
-  const right = MeshBuilder.CreateBox("roof-r", { width: 5.4, height: 0.16, depth: 10.2 }, scene);
-  right.position.set(112.85, floorY + 3.55, 145);
-  right.rotation.z = -0.42;
-  right.material = material;
-  const chimney = MeshBuilder.CreateBox("chimney", { width: 0.55, height: 1.3, depth: 0.55 }, scene);
-  chimney.position.set(113.4, floorY + 4.15, 147.2);
-  chimney.material = pbr(scene, "brick", "#4a4038", 0.9);
-}
-
-function porch(scene: Scene, wood: ReturnType<typeof pbr>, dark: ReturnType<typeof pbr>, floorY: number): void {
-  const deck = MeshBuilder.CreateBox("porch", { width: 7.2, height: 0.12, depth: 8.6 }, scene);
-  deck.position.set(106.6, floorY + 0.12, 153.6);
-  deck.material = wood;
-  const cover = MeshBuilder.CreateBox("porch-roof", { width: 7.4, height: 0.1, depth: 8.8 }, scene);
-  cover.position.set(106.6, floorY + 2.55, 153.6);
-  cover.material = dark;
-  for (const [x, z] of [
-    [103.6, 149.6],
-    [109.6, 149.6],
-    [103.6, 157.6],
-    [109.6, 157.6],
-  ] as const) {
-    const post = MeshBuilder.CreateCylinder("porch-post", { height: 2.4, diameter: 0.16, tessellation: 6 }, scene);
-    post.position.set(x, floorY + 1.25, z);
-    post.material = dark;
-  }
-  const crateA = MeshBuilder.CreateBox("crate-a", { width: 1.9, height: 1.15, depth: 1.4 }, scene);
-  crateA.position.set(105.35, floorY + 0.7, 153.9);
-  crateA.material = wood;
-  const crateB = MeshBuilder.CreateBox("crate-b", { width: 1.8, height: 1.25, depth: 1.6 }, scene);
-  crateB.position.set(107.5, floorY + 0.75, 156.2);
-  crateB.material = dark;
-}
-
-function door(scene: Scene, material: ReturnType<typeof pbr>, x: number, floorY: number, z: number, width: number, height: number, depth: number): TransformNode {
-  const pivot = new TransformNode(`door-pivot-${x}-${z}`, scene);
-  pivot.position.set(x, floorY, z);
-  const leaf = MeshBuilder.CreateBox(`door-${x}`, { width: width || 0.12, height, depth: depth || 0.08 }, scene);
-  leaf.material = material;
-  leaf.parent = pivot;
-  leaf.position.x = width > 0.4 ? width / 2 : 0;
-  leaf.position.y = height / 2;
-  leaf.position.z = depth > 0.4 ? depth / 2 : 0;
-  return pivot;
-}
-
-function furniture(scene: Scene, wood: ReturnType<typeof pbr>, dark: ReturnType<typeof pbr>, floorY: number, diodeMat: ReturnType<typeof pbr>): void {
-  const table = MeshBuilder.CreateBox("table", { width: 1.9, height: 0.74, depth: 0.95 }, scene);
-  table.position.set(113.2, floorY + 0.45, 144);
-  table.material = wood;
-  const radio = MeshBuilder.CreateBox("radio", { width: 0.62, height: 0.28, depth: 0.34 }, scene);
-  radio.position.set(INTERACT.radio.x, floorY + 0.96, INTERACT.radio.z);
-  radio.material = dark;
-  const diode = MeshBuilder.CreateSphere("diode", { diameter: 0.06, segments: 6 }, scene);
-  diode.position.set(INTERACT.radio.x + 0.22, floorY + 1.08, INTERACT.radio.z + 0.12);
-  diode.material = diodeMat;
-  const book = MeshBuilder.CreateBox("notebook", { width: 0.28, height: 0.04, depth: 0.36 }, scene);
-  book.position.set(INTERACT.notebook.x, floorY + 0.86, INTERACT.notebook.z);
-  book.material = pbr(scene, "paper", "#d8c7a4", 0.8);
-  const panel = MeshBuilder.CreateBox("panel", { width: 0.12, height: 0.7, depth: 0.5 }, scene);
-  panel.position.set(INTERACT.panel.x, floorY + 1.35, INTERACT.panel.z);
-  panel.material = pbr(scene, "panel", "#2c2824", 0.55, 0.4);
-  const bed = MeshBuilder.CreateBox("bed", { width: 2.1, height: 0.45, depth: 1.15 }, scene);
-  bed.position.set(107.7, floorY + 0.35, 147.3);
-  bed.material = pbr(scene, "blanket", "#3e2e2a", 0.9);
-  const stove = MeshBuilder.CreateBox("stove", { width: 0.8, height: 0.9, depth: 0.7 }, scene);
-  stove.position.set(113.5, floorY + 0.55, 147.4);
-  stove.material = pbr(scene, "iron", "#2a2c2e", 0.4, 0.8);
-}
-
 function buildShed(
   scene: Scene,
   wood: ReturnType<typeof pbr>,
@@ -343,7 +228,7 @@ function buildShed(
   const rotor = MeshBuilder.CreateBox("generator-wheel", { width: 0.5, height: 0.5, depth: 0.08 }, scene);
   rotor.position.set(140.2, y + 0.8, 154.2);
   rotor.material = metal;
-  const shedDoor = door(scene, wood, SHED.minX, y, 154, 0.1, 2.05, 2);
+  const shedDoor = hingedDoor(scene, wood, metal, SHED.minX, y, 154, 0.1, 2.05, 2);
   return { rotor, door: shedDoor };
 }
 

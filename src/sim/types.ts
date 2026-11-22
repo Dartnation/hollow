@@ -19,7 +19,7 @@ export type MissionState =
 
 export type RouteId = "none" | "bridge" | "slope";
 export type Beat = "none" | "transmitting" | "broken";
-export type DoorId = "front" | "side" | "shed";
+export type DoorId = "front" | "side" | "shed" | "hunt";
 export type Surface = "dirt" | "wood" | "porch" | "floor" | "water";
 export type Gait = "crouch" | "walk" | "run";
 
@@ -44,6 +44,8 @@ export interface Doors {
   front: boolean;
   side: boolean;
   shed: boolean;
+  /** Abandoned hunting cabin. Not part of the mission. */
+  hunt: boolean;
 }
 
 export interface Aabb {

@@ -83,6 +83,7 @@ const FOCUS = [
   { id: "front-door", ...INTERACT.frontDoor },
   { id: "side-door", ...INTERACT.sideDoor },
   { id: "shed-door", ...INTERACT.shedDoor },
+  { id: "hunt-door", ...INTERACT.huntDoor },
   { id: "antenna", ...INTERACT.antenna },
   { id: "passage", ...INTERACT.passage },
 ] as const;
@@ -437,6 +438,9 @@ export class GameSim {
       case "shed-door":
         this.toggleDoor("shed");
         break;
+      case "hunt-door":
+        this.toggleDoor("hunt");
+        break;
       case "passage":
         if (this.mission.state !== "ESCAPE") this.say(COPY.passageDark, 2.5);
         break;
@@ -479,10 +483,11 @@ export class GameSim {
     if (this.tuning) this.say("Drej frekvensen. Suset bliver tyndere, når du nærmer dig.", 3.5);
   }
 
-  private toggleDoor(door: "front" | "side" | "shed"): void {
+  private toggleDoor(door: "front" | "side" | "shed" | "hunt"): void {
     const open = !this.mission.doors[door];
     this.mission = reduceMission(this.mission, { type: "SET_DOOR", door, open });
-    const pos = door === "front" ? this.point(INTERACT.frontDoor) : door === "side" ? this.point(INTERACT.sideDoor) : this.point(INTERACT.shedDoor);
+    const spot = door === "front" ? INTERACT.frontDoor : door === "side" ? INTERACT.sideDoor : door === "shed" ? INTERACT.shedDoor : INTERACT.huntDoor;
+    const pos = this.point(spot);
     this.cues.push({ kind: "door", position: pos, intensity: 0.8 });
     this.pushNoise("door", pos, 0.8, `door-${door}`);
     this.path = null;
@@ -615,7 +620,7 @@ export class GameSim {
     const goal = this.brain.goal;
     this.monster.speed = 0;
     if (!goal || this.brain.speed <= 0) return;
-    const key = `${goal.x.toFixed(1)}:${goal.z.toFixed(1)}:${this.mission.doors.front}:${this.mission.doors.side}:${this.mission.doors.shed}`;
+    const key = `${goal.x.toFixed(1)}:${goal.z.toFixed(1)}:${this.mission.doors.front}:${this.mission.doors.side}:${this.mission.doors.shed}:${this.mission.doors.hunt}`;
     this.replan -= dt;
     if (!this.path || this.replan <= 0 || key !== this.pathKey) {
       this.path = this.lineClear(goal) ? [goal] : findPath(this.world.grid, this.monster, goal, (x, z) => this.doorBlocks(x, z));
@@ -736,6 +741,8 @@ export class GameSim {
         return this.mission.doors.side ? "Luk sidedøren" : "Åbn sidedøren";
       case "shed-door":
         return this.mission.doors.shed ? "Luk skurdøren" : "Åbn skurdøren";
+      case "hunt-door":
+        return this.mission.doors.hunt ? "Luk døren" : "Åbn døren";
       case "antenna":
         if (this.mission.state === "REPAIR_LINK") return "Hold E — fastlås antennen";
         return this.mission.antenna ? "Antennen er låst" : "Antennen svarer ikke";

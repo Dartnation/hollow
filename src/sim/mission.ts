@@ -40,7 +40,7 @@ export function initialMission(): Mission {
     antenna: false,
     notebook: false,
     signRead: false,
-    doors: { front: false, side: false, shed: false },
+    doors: { front: false, side: false, shed: false, hunt: false },
     checkpoint: 1,
   };
 }
