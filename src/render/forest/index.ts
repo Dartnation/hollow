@@ -1,13 +1,14 @@
-import { CascadedShadowGenerator, Matrix, Scene, ShadowGenerator, Vector3, type DirectionalLight } from "@babylonjs/core";
+import { CascadedShadowGenerator, Matrix, Mesh, Scene, ShadowGenerator, Vector3, type DirectionalLight } from "@babylonjs/core";
 import type { GameSim } from "../../sim/game";
 import type { Tree } from "../../sim/types";
 import { groundHeight } from "../../sim/world";
 import { buildForestFloor } from "./floor";
-import { FOREST_REFRESH_DISTANCE, forestMoved, lodTier, type LodTier } from "./lod";
+import { FOREST_DRAW_DISTANCE, FOREST_REFRESH_DISTANCE, forestMoved, lodTier, type LodTier } from "./lod";
 import { placeThin } from "./thin";
 import { buildStones } from "./rocks";
 import { WORLD } from "../../sim/layout";
-import { buildTreePrototypes, prototypeIndex, treeMatrix } from "./trees";
+import { loadImportedForest, type SpeciesMeshes } from "./imported";
+import { treeMatrix, treeSpecies, treeVisualScale } from "./trees";
 import { buildUndergrowth } from "./undergrowth";
 
 export interface Forest {
@@ -16,18 +17,21 @@ export interface Forest {
 }
 
 interface PlacedTree {
-  proto: number;
+  species: SpeciesMeshes;
   x: number;
   z: number;
   matrix: Matrix;
   tier: LodTier;
+  hidden: boolean;
+  wasHidden: boolean;
 }
 
-export function createForest(scene: Scene, sim: GameSim, moon: DirectionalLight): Forest {
+export async function createForest(scene: Scene, sim: GameSim, moon: DirectionalLight): Promise<Forest> {
   buildForestFloor(scene);
   buildUndergrowth(scene);
   buildStones(scene, sim);
-  const prototypes = buildTreePrototypes(scene);
+  const imported = await loadImportedForest(scene);
+  const speciesOf = { fir: imported.fir, pine: imported.pine, snag: imported.snag };
   try {
     const csm = new CascadedShadowGenerator(512, moon);
     csm.numCascades = 1;
@@ -38,56 +42,59 @@ export function createForest(scene: Scene, sim: GameSim, moon: DirectionalLight)
     csm.usePercentageCloserFiltering = true;
     csm.filteringQuality = ShadowGenerator.QUALITY_LOW;
     csm.bias = 0.006;
-    for (const proto of prototypes) csm.addShadowCaster(proto.bark, false);
+    for (const mesh of imported.shadows) csm.addShadowCaster(mesh, false);
   } catch {
     /* Headless WebGL can refuse cascaded maps. The forest still renders. */
   }
 
   const placed: PlacedTree[] = [...sim.world.trees, ...borderTrees()].map((tree) => {
-    const pose = treeMatrix(tree, groundHeight(tree.x, tree.z));
+    const pose = treeMatrix({ ...tree, scale: treeVisualScale(tree, variant(tree)) }, groundHeight(tree.x, tree.z));
     return {
-      proto: prototypeIndex(tree, variant(tree)),
+      species: speciesOf[treeSpecies(tree)],
       x: tree.x,
       z: tree.z,
       matrix: Matrix.Compose(pose.scaling, pose.rotation, pose.position),
       tier: "far" as LodTier,
+      hidden: true,
+      wasHidden: true,
     };
   });
   const anchor = new Vector3(Number.NaN, 0, Number.NaN);
+  const allMeshes = [...imported.fir.near, ...imported.fir.mid, ...imported.fir.far, ...imported.pine.near, ...imported.pine.mid, ...imported.pine.far, ...imported.snag.near, ...imported.snag.mid, ...imported.snag.far];
 
   const sync = (cam: Vector3, force: boolean) => {
     if (!force && !forestMoved(anchor.x, anchor.z, cam.x, cam.z)) return;
     let changed = force;
     for (const tree of placed) {
-      const tier = lodTier(Math.hypot(tree.x - cam.x, tree.z - cam.z), force ? null : tree.tier);
-      if (tier !== tree.tier) {
+      const distance = Math.hypot(tree.x - cam.x, tree.z - cam.z);
+      const tier = distance > FOREST_DRAW_DISTANCE ? "far" : lodTier(distance, force ? null : tree.tier);
+      tree.hidden = distance > FOREST_DRAW_DISTANCE;
+      if (tier !== tree.tier || tree.hidden !== tree.wasHidden) {
         tree.tier = tier;
+        tree.wasHidden = tree.hidden;
         changed = true;
       }
     }
     anchor.copyFrom(cam);
     if (!changed) return;
-    const near: Matrix[][] = prototypes.map(() => []);
-    const mid: Matrix[][] = prototypes.map(() => []);
-    const far: Matrix[][] = prototypes.map(() => []);
+    const groups = new Map<Mesh, Matrix[]>();
     for (const tree of placed) {
-      const bucket = tree.tier === "near" ? near : tree.tier === "mid" ? mid : far;
-      bucket[tree.proto]?.push(tree.matrix);
+      if (tree.hidden) continue;
+      const parts = tree.tier === "near" ? tree.species.near : tree.tier === "mid" ? tree.species.mid : tree.species.far;
+      for (const mesh of parts) {
+        const list = groups.get(mesh) ?? [];
+        list.push(tree.matrix);
+        groups.set(mesh, list);
+      }
     }
-    prototypes.forEach((proto, index) => {
-      placeThin(proto.bark, near[index] ?? []);
-      if (proto.foliage) placeThin(proto.foliage, near[index] ?? []);
-      placeThin(proto.spine, [...(mid[index] ?? []), ...(far[index] ?? [])]);
-      if (proto.mid) placeThin(proto.mid, mid[index] ?? []);
-      if (proto.far) placeThin(proto.far, far[index] ?? []);
-    });
+    for (const mesh of allMeshes) placeThin(mesh, groups.get(mesh) ?? []);
   };
 
   sync(new Vector3(2.4, 2, 8), true);
 
   return {
     useShadows(generator) {
-      for (const proto of prototypes) generator.addShadowCaster(proto.bark, false);
+      for (const mesh of imported.shadows) generator.addShadowCaster(mesh, false);
     },
     update(camera) {
       sync(camera, false);

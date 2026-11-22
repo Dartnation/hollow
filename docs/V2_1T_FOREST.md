@@ -14,7 +14,7 @@ Bækken efter rettelsen: `docs/evidence/v2.1t/16-stream.png`. Samme seed og de g
 
 Åbn `http://127.0.0.1:5183/?showroom=1`. Neutral belysning. Skoven, regnen, bilen og vogteren er slået fra på den side. Gameplay-siden uden parameteren er uændret, bortset fra terrænrettelsen og at V1-lyden spiller igen.
 
-Til venstre står V2.1S. Til højre står prøven.
+Til venstre står V2.1S. Til højre står de reducerede Poly Haven-træer, ikke den gamle procedurale prøve.
 
 | Billede | Hvad det viser |
 | --- | --- |
@@ -24,13 +24,17 @@ Til venstre står V2.1S. Til højre står prøven.
 | `docs/evidence/v2.1t/showroom-pine.png` | Prøvefyrren, bar stamme og krone |
 | `docs/evidence/v2.1t/showroom-fern.png` | Prøvebregnen |
 
-Prøvegran og prøvefyr har stammer med rodudløb, grene med volumen og små nåleklaser på kvistene. De er ikke de flade hylder. De er stadig for åbne til at kaldes naturtro kroner, og klaserne gentager sig. Bregnen er syv blade omkring en stilk og læser stadig som en lille stjerne. Jordstykket til højre har mos, sten og nåle i en 512-tekstur. Ingen af delene er skiftet ind i skoven.
+Michael har sagt ja til Poly Haven Fir Tree 01 og Pine Tree 01, begge CC0. Råfilerne ligger uden for git. I showroomet står variant c af granen og variant b af fyrren, skåret ned til spilstørrelse: stammen og de døde grene er beholdt, og de titusindvis af nålesplinter er bygget om til krydsede kort med de fotografiske kviste. Granen er 4.358 trekanter og 3,3 MB. Fyrren er 5.843 trekanter og 3,4 MB. Skoven bruger dem ikke endnu.
 
-Enhedstesten holder prøvegran og prøvefyr mellem 800 og 8.000 trekanter stykket, så en senere udskiftning kan instanseres uden at sprænge det nuværende budget. Det tal er geometrien for én model, ikke skovens samlede tal.
+Granens stamme har den fotograferede bark, og kronen læser som nåle frem for hylder. Fyrrens stamme og rodudløb er fra scanet. Fyrrens krone er stadig tynd og grå og er ikke en færdig udskiftning. Foran træerne står også [Othonna cerarioides](https://polyhaven.com/a/othonna_cerarioides) og [Searsia burchellii](https://polyhaven.com/a/searsia_burchellii), begge CC0, reduceret til 4.788 og 6.166 trekanter. De har deres egen størrelse, omkring 1,4 m og 1,9 m. Til højre står [Jacaranda Tree](https://polyhaven.com/a/jacaranda_tree), CC0, skåret ned fra 3,9 millioner trekanter til 32.667 og 5,4 MB, og vist i 8 m højde. Kronen er stadig åben i forhold til scanet. Bregnen er uændret. Ingen af modellerne er sat ind i skoven.
 
-## Assets, hvis prøven ikke rækker
+`node scripts/reduce-polyhaven.mjs` kan bygge GLB-filerne igen, når `.cache/polyhaven` indeholder de hentede 1K-udsnit. Cachen er gitignoreret.
 
-Intet er downloadet eller importeret.
+Enhedstesten kræver, at hver GLB er under 8,5 MB og mellem 1.500 og 8.500 trekanter. Det tal er én model, ikke skovens samlede tal. Den gamle procedurale prøve har stadig sin egen test og bruges ikke i showroomet.
+
+## Assets
+
+De to CC0-modeller er godkendt og reduceret til showroomet. De rå scans er ikke i repoet.
 
 | Kilde | Licens | Pris | Begrænsning |
 | --- | --- | --- | --- |
@@ -38,7 +42,7 @@ Intet er downloadet eller importeret.
 | [Poly Haven-teksturer](https://polyhaven.com/textures) til bark og jord | CC0 | Gratis | 1K–2K er en realistisk størrelse til de nuværende meshes. |
 | [Quaternius Ultimate Nature Pack](https://quaternius.itch.io/150-lowpoly-nature-models) | CC0 på den side. Nyere pakker har en anden licens. Bekræft teksten før et ja. | Gratis | For lavpoly til det her kvalitetskrav. Det ville ligne endnu en prototype. |
 
-Næste skridt efter et nej til prøven er et spilklart sæt på 2–8 tusind trekanter pr. nær-model, med en licens Michael har sagt ja til. Ikke et scan og ikke endnu en omfarvning.
+Næste skridt er Michaels ja eller nej til de to showroom-træer, før de sættes ind på de eksisterende placeringer. Fyrrens krone skal være tættere, før den kan bære skoven.
 
 ## Måling
 

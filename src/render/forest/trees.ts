@@ -166,6 +166,23 @@ export function buildTreePrototypes(scene: Scene): TreePrototype[] {
   });
 }
 
+const PROTOTYPE_HEIGHT = [9.2, 6.4, 8.4, 11, 8.1, 6.8, 8.6, 5.2] as const;
+
+/** Visual height multiplier. Simulation scale, position and collision stay on the tree record. */
+export function treeVisualScale(tree: Tree, variant: number): number {
+  const family = familyOf(tree.kind);
+  const canonical = family === "pine" ? 11 : 9.2;
+  const height = PROTOTYPE_HEIGHT[prototypeIndex(tree, variant)] ?? canonical;
+  return tree.scale * (height / canonical);
+}
+
+export function treeSpecies(tree: Tree): "fir" | "pine" | "snag" {
+  const family = familyOf(tree.kind);
+  if (family === "pine") return "pine";
+  if (family === "snag") return "snag";
+  return "fir";
+}
+
 export function prototypeIndex(tree: Tree, variant: number): number {
   const family = familyOf(tree.kind);
   if (family === "snag") return 5 + (variant % 2);

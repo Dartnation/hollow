@@ -1,0 +1,66 @@
+{
+  "viewport": "1920x1080 visible Chromium",
+  "seed": 170147,
+  "camera": "arrival 2.2,8 look 40,70",
+  "samples": [
+    {
+      "fps": 35.68847400752882,
+      "triangles": 785340
+    },
+    {
+      "fps": 37.28392869588216,
+      "triangles": 785340
+    },
+    {
+      "fps": 38.153323239444966,
+      "triangles": 785340
+    },
+    {
+      "fps": 39.47254630124931,
+      "triangles": 785340
+    },
+    {
+      "fps": 39.60592006090318,
+      "triangles": 785340
+    },
+    {
+      "fps": 40.95904343060455,
+      "triangles": 838072
+    },
+    {
+      "fps": 45.33730749432329,
+      "triangles": 838072
+    },
+    {
+      "fps": 50.57543624953965,
+      "triangles": 838072
+    },
+    {
+      "fps": 56.20410361350549,
+      "triangles": 838072
+    },
+    {
+      "fps": 58.68654784909497,
+      "triangles": 838072
+    },
+    {
+      "fps": 59.52046412371232,
+      "triangles": 838072
+    },
+    {
+      "fps": 60.07913910757918,
+      "triangles": 838072
+    }
+  ],
+  "avgFps": 46.79718618111398,
+  "avgMs": 21.36880615278471,
+  "p95Ms": 28.020251014068034,
+  "note": "avgMs includes the fps smoother warming up from zero. The last samples sit on the 60 fps cap, so this run does not show cost below 16.7 ms. Triangle count is the meaningful comparison.",
+  "triangles": 838072,
+  "errors": [],
+  "baseline": {
+    "ms": 16.47,
+    "triangles": 354228,
+    "note": "V2.1T visible Chromium arrival"
+  }
+}

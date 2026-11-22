@@ -153,5 +153,7 @@ test("compares sample models with the current forest models", async ({ page }) =
   await shot("showroom-spruce-side", 9.2, 8, 4.2, 8, 0.2);
   await shot("showroom-pine", 4.2, 10.4, 4.2, 15, 0.42);
   await shot("showroom-fern", 6.4, 1.2, 6.4, 4.4, -0.28);
+  const hollowErrors = await page.evaluate(() => window.__HOLLOW__?.errors ?? []);
   expect(errors, errors.join("\n")).toEqual([]);
+  expect(hollowErrors, hollowErrors.join("\n")).toEqual([]);
 });

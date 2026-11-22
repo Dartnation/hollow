@@ -25,6 +25,8 @@ import { pbr } from "./materials";
 export interface WorldView {
   flashlight: SpotLight;
   exposure: { value: number };
+  showroomReady: Promise<void>;
+  forestReady: Promise<void>;
   update(sim: GameSim, dt: number): void;
   setHudLit(on: boolean): void;
 }
@@ -47,8 +49,13 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
   lampMat.emissiveIntensity = 0;
 
   const showroom = new URLSearchParams(location.search).get("showroom") === "1";
-  const forest = showroom ? null : createForest(scene, sim, moon);
-  if (showroom) buildShowroom(scene);
+  let forest: Awaited<ReturnType<typeof createForest>> | null = null;
+  const forestReady = showroom
+    ? Promise.resolve()
+    : createForest(scene, sim, moon).then((created) => {
+        forest = created;
+      });
+  const showroomReady = showroom ? buildShowroom(scene) : Promise.resolve();
   buildWater(scene);
   buildBridge(scene, woodDark);
   buildCar(scene, metal);
@@ -63,7 +70,7 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
     scene.getMeshByName("car-cabin")?.setEnabled(false);
   }
   const lights = buildLights(scene, floorY, camera);
-  if (forest) forest.useShadows(lights.shadows);
+  void forestReady.then(() => forest?.useShadows(lights.shadows));
   if (!showroom) buildRain(scene, camera);
 
   const exposure = { value: 1.12 };
@@ -72,6 +79,8 @@ export function buildWorld(scene: Scene, camera: Camera, sim: GameSim, moon: Dir
   return {
     flashlight: lights.flashlight,
     exposure,
+    showroomReady,
+    forestReady,
     setHudLit() {},
     update(simNow, dt) {
       phase += dt;

@@ -203,6 +203,15 @@ export async function mount(canvas: HTMLCanvasElement): Promise<void> {
     fps = dt > 0 ? fps * 0.95 + (1 / dt) * 0.05 : fps;
   });
 
+  await Promise.all([
+    view.showroomReady.catch((error: unknown) => {
+      errors.push(`Showroom: ${String(error)}`);
+    }),
+    view.forestReady.catch((error: unknown) => {
+      errors.push(`Forest: ${String(error)}`);
+    }),
+  ]);
+
   if (params.get("autostart") === "1") begin();
 
   if (testMode) {
