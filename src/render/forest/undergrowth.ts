@@ -1,5 +1,5 @@
 import { Matrix, Mesh, PBRMaterial, Quaternion, Scene, Vector3 } from "@babylonjs/core";
-import { BRIDGE_ROUTE, ESCAPE_ROUTE, HUT, SHED, SLOPE_ROUTE, WORLD } from "../../sim/layout";
+import { BRIDGE_ROUTE, ESCAPE_ROUTE, HUNT, HUT, SHED, SLOPE_ROUTE, WORLD } from "../../sim/layout";
 import { distanceToPolyline, mulberry32 } from "../../sim/rng";
 import { groundHeight, onSlope, streamDistance } from "../../sim/world";
 import { pbr } from "../materials";
@@ -163,6 +163,7 @@ function thin(mesh: Mesh, items: readonly Scatter[], yLift: number): void {
   const matrices: Matrix[] = [];
   const matrix = new Matrix();
   for (const item of items) {
+    if (item.x > HUNT.minX - 0.6 && item.x < HUNT.maxX + 0.8 && item.z > HUNT.minZ - 0.6 && item.z < HUNT.maxZ + 0.8) continue;
     Matrix.ComposeToRef(
       new Vector3(item.scale, item.scale, item.scale),
       Quaternion.RotationYawPitchRoll(item.rot, 0, 0),

@@ -23,6 +23,15 @@ export const HUT = {
   height: 2.85,
 };
 
+/** Abandoned hunting cabin, east of the escape path. Empty of trunks on seeds 170147 and 22011. */
+export const HUNT = {
+  minX: 157.2,
+  maxX: 162.8,
+  minZ: 162,
+  maxZ: 166.2,
+  height: 2.35,
+};
+
 export const SHED = {
   minX: 138.4,
   maxX: 143.4,
@@ -90,6 +99,7 @@ export const INTERACT = {
   frontDoor: { x: 110.0, z: 141.15, radius: 1.8 },
   sideDoor: { x: 114.85, z: 145.2, radius: 1.7 },
   shedDoor: { x: 138.35, z: 155.2, radius: 1.8 },
+  huntDoor: { x: 156.55, z: 164, radius: 1.75 },
   antenna: { x: 141.7, z: 158.6, radius: 2.15 },
   passage: { x: 175, z: 205, radius: 3.4 },
 } as const;

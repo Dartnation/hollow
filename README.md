@@ -28,6 +28,6 @@ Dette repository er **public**. Commit aldrig passwords, API-nøgler, tokens, pe
 
 ## Ærlig status
 
-V1 er implementeret på `feature/v1-vertical-slice` og er ikke godkendt. V2.1 ligger på `feature/v2.1-forest-graphics`. V2.1R ligger på `feature/v2.1r-forest-revision`. V2.1S ligger på `feature/v2.1s-clean-forest`. V2.1T retter det sorte terrænplan og viser en modelprøve. V2.1U sætter den reducerede gran og fyr ind på de eksisterende træpunkter. Den er ikke godkendt. Se `docs/V2_1U_FOREST.md`.
+V1 er implementeret på `feature/v1-vertical-slice` og er ikke godkendt. V2.1 ligger på `feature/v2.1-forest-graphics`. V2.1R ligger på `feature/v2.1r-forest-revision`. V2.1S ligger på `feature/v2.1s-clean-forest`. V2.1T retter det sorte terrænplan og viser en modelprøve. V2.1U sætter den reducerede gran og fyr ind på de eksisterende træpunkter. V2.2 bygger skovfogedstationen om og tilføjer en forladt jagthytte. Den er ikke godkendt. Se `docs/V2_2_CABINS.md`.
 
 Start lokalt med `npm install` og `npm run dev`. Standardporten er 5183 og kan ændres med `PORT` eller `vite --port`. Spilvejledning og testresultater ligger i `docs/PLAYTEST_V1.md` og `docs/V1_STATUS.md`. Grafikken er procedural og stemningsfuld, ikke fotorealistisk.

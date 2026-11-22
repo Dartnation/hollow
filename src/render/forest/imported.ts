@@ -190,8 +190,11 @@ async function loadSpecies(scene: Scene, files: readonly [string, string, string
 export async function loadImportedForest(scene: Scene): Promise<ImportedForest> {
   const fir = await loadSpecies(scene, FILES.fir, 9.2);
   const pine = await loadSpecies(scene, FILES.pine, 11);
+  for (const mesh of fir.near) {
+    if (!isBark(mesh)) fillCrown(mesh, 1.22);
+  }
   for (const mesh of pine.near) {
-    if (!isBark(mesh)) fillCrown(mesh, 1.45);
+    if (!isBark(mesh)) fillCrown(mesh, 1.75);
   }
   const snag = barkOnly(fir, "snag");
   const bark = fir.near.find(isBark);

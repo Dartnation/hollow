@@ -4,6 +4,7 @@ import {
   BRIDGE_ROUTE,
   ESCAPE_ROUTE,
   HIDE,
+  HUNT,
   HUT,
   INTERACT,
   LANDMARKS,
@@ -99,6 +100,10 @@ export function inShed(x: number, z: number): boolean {
   return x > SHED.minX + 0.35 && x < SHED.maxX - 0.35 && z > SHED.minZ + 0.35 && z < SHED.maxZ - 0.35;
 }
 
+export function inHunt(x: number, z: number): boolean {
+  return x > HUNT.minX + 0.4 && x < HUNT.maxX - 0.35 && z > HUNT.minZ + 0.35 && z < HUNT.maxZ - 0.35;
+}
+
 export function onSlope(x: number, z: number): boolean {
   if (bridgeQuery(x, z)) return false;
   return distanceToPolyline(x, z, SLOPE_ROUTE) < 7.5 && z > 68 && z < 136 && x < 96;
@@ -109,7 +114,7 @@ export function inSecurityZone(x: number, z: number): boolean {
 }
 
 export function surfaceAt(x: number, z: number): Surface {
-  if (indoors(x, z) || inShed(x, z)) return "floor";
+  if (indoors(x, z) || inShed(x, z) || inHunt(x, z)) return "floor";
   if (inHide(x, z) || (z > HUT.maxZ - 0.2 && z < HUT.maxZ + 3.2 && x > HUT.minX - 1 && x < HUT.maxX + 1)) {
     return "porch";
   }
@@ -122,8 +127,10 @@ export function groundHeight(x: number, z: number): number {
   const terrain = terrainHeight(x, z);
   const deck = bridgeHeight(x, z);
   let y = deck === null ? terrain : Math.max(terrain, deck);
-  if (indoors(x, z) || inHide(x, z) || inShed(x, z)) {
-    const pad = indoors(x, z) || inHide(x, z) ? terrainHeight(LANDMARKS.hut.x, LANDMARKS.hut.z) : terrainHeight(LANDMARKS.shed.x, LANDMARKS.shed.z);
+  if (indoors(x, z)) return terrainHeight(LANDMARKS.hut.x, LANDMARKS.hut.z) + 0.16;
+  if (inHunt(x, z)) return terrainHeight((HUNT.minX + HUNT.maxX) / 2, (HUNT.minZ + HUNT.maxZ) / 2) + 0.16;
+  if (inHide(x, z) || inShed(x, z)) {
+    const pad = inHide(x, z) ? terrainHeight(LANDMARKS.hut.x, LANDMARKS.hut.z) : terrainHeight(LANDMARKS.shed.x, LANDMARKS.shed.z);
     y = Math.max(y, pad + 0.04);
   }
   return y;
@@ -194,6 +201,25 @@ function hutBoxes(): Aabb[] {
   boxes.push(aabb("bed", 106.55, 0, 146.15, 108.9, 0.7, 148.45, true, true));
   boxes.push(aabb("stove", 112.7, 0, 146.5, 114.45, 1.15, 148.35, true, true));
   return boxes;
+}
+
+function huntBoxes(): Aabb[] {
+  const y = HUNT.height;
+  const w = HUNT.minX;
+  const e = HUNT.maxX - 0.28;
+  const s = HUNT.minZ;
+  const n = HUNT.maxZ - 0.28;
+  return [
+    aabb("hunt-s", HUNT.minX, 0, s, HUNT.maxX, y, s + 0.28, true, true),
+    aabb("hunt-n", HUNT.minX, 0, n, HUNT.maxX, y, HUNT.maxZ, true, true),
+    aabb("hunt-e", e, 0, HUNT.minZ, HUNT.maxX, y, HUNT.maxZ, true, true),
+    aabb("hunt-w-s", w, 0, HUNT.minZ, w + 0.28, y, 163.4, true, true),
+    aabb("hunt-w-n", w, 0, 164.6, w + 0.28, y, HUNT.maxZ, true, true),
+    aabb("door-hunt", w, 0, 163.4, w + 0.28, y, 164.6, true, true, "hunt"),
+    aabb("hunt-bunk", 160.85, 0, 162.45, 162.4, 0.55, 163.7, true, true),
+    aabb("hunt-table", 158.05, 0, 165.0, 159.35, 0.72, 165.85, true, true),
+    aabb("hunt-crate", 161.3, 0, 165.15, 162.15, 0.55, 165.8, true, false),
+  ];
 }
 
 function shedBoxes(): Aabb[] {
@@ -357,7 +383,7 @@ function treeBoxes(trees: readonly Tree[]): Aabb[] {
 
 export function createWorld(seed: number): World {
   const { trees, rocks } = scatter(seed);
-  const structural = [...hutBoxes(), ...shedBoxes(), ...propBoxes(), ...borderBoxes()];
+  const structural = [...hutBoxes(), ...shedBoxes(), ...huntBoxes(), ...propBoxes(), ...borderBoxes()];
   const grid = buildGrid(structural, (x, z) => 1 - slopeFactor(x, z));
   const boxes = [...structural, ...treeBoxes(trees)];
   for (const tree of trees) stampDisc(grid, tree.x, tree.z, tree.trunkRadius + BODY.monsterRadius + 0.25);

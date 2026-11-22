@@ -8,8 +8,8 @@ import { MeshoptSimplifier } from "meshoptimizer";
 
 const root = path.resolve(import.meta.dirname, "..");
 const LEVELS = [
-  { suffix: "mid", bark: 360, cards: 180, grow: 1.85 },
-  { suffix: "far", bark: 140, cards: 48, grow: 2.5 },
+  { suffix: "mid", bark: 360, cards: 280, grow: 1.5 },
+  { suffix: "far", bark: 140, cards: 72, grow: 2.15 },
 ];
 
 function readGlb(file) {

@@ -56,7 +56,7 @@ describe("forest layout", () => {
   });
 
   it("blocks a body on a closed door and lets it through once the door is open", () => {
-    const doors = { front: false, side: false, shed: false };
+    const doors = { front: false, side: false, shed: false, hunt: false };
     let x = 111;
     let z = 138.6;
     for (let i = 0; i < 16; i += 1) {
